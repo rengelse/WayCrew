@@ -1,3 +1,10 @@
+# v0.2.17 – Android CI Java 21 Fix
+
+- GitHub Actions now uses Temurin JDK 21 instead of JDK 17.
+- Fixes MapLibre Android compilation failure: `invalid source release: 21`.
+- Keeps Flutter 3.47.4 and the existing WayCrew Android CI/build pipeline.
+- No Supabase migration in this release.
+
 # WayCrew Release Notes
 
 ## v0.2.16 – GitHub CI Template Test Fix
