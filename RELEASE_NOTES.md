@@ -1,23 +1,16 @@
-# v0.2.17 – Android CI Java 21 Fix
-
-- GitHub Actions now uses Temurin JDK 21 instead of JDK 17.
-- Fixes MapLibre Android compilation failure: `invalid source release: 21`.
-- Keeps Flutter 3.47.4 and the existing WayCrew Android CI/build pipeline.
-- No Supabase migration in this release.
-
 # WayCrew Release Notes
 
-## v0.2.16 – GitHub CI Template Test Fix
+## v0.2.18 – Release Build & GitHub Update Check
 
-- Fixes GitHub Actions analyzer failure caused by Flutter-generated `test/widget_test.dart` referencing the default `MyApp` template class.
-- CI now removes only the generated Flutter template test after `flutter create`.
-- Existing WayCrew tests remain intact and still run with `flutter test`.
+- GitHub Actions builds a signed release APK on both `main` pushes and `v*` tags.
+- Release APK is named `WayCrew-vX.Y.Z.apk`.
+- Tags are validated against the version in `pubspec.yaml` before publishing a GitHub Release.
+- WayCrew checks `rengelse/WayCrew` GitHub Releases automatically at startup.
+- A new-version dialog shows installed and available versions and links directly to the APK asset when present.
+- Update checks are throttled to avoid unnecessary GitHub API traffic and repeated prompts.
+- Settings > Om now shows the installed version and includes manual `Sjekk etter oppdatering`.
 - No Supabase migration in this release.
 
-# WayCrew v0.2.15 – Place Search Fix
+## v0.2.17 – Java 21 CI Fix
 
-- Retter Photon-søk som sendte ugyldig norsk språkkode `no`.
-- Bruker `nb` for norsk bokmål.
-- Legger inn robust firetrinns fallback: Norge+språk, Norge uten språk, globalt+språk, globalt uten språk.
-- Oppdaterer Place Search User-Agent til WayCrew v0.2.15.
-- Ingen Supabase-migrering i denne versjonen.
+- GitHub Actions uses Temurin JDK 21 for MapLibre Android compilation.

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/design_system/app_widgets.dart';
 import '../../data/mock/mock_settings_store.dart';
 import '../../data/mock/providers.dart';
 import '../../core/supabase/supabase_providers.dart';
+import '../../core/update/app_update_service.dart';
 import '../auth/auth_controller.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -38,7 +41,7 @@ class SettingsScreen extends ConsumerWidget {
         ]))),
         AppSection(title: 'Kart og visning', child: Card(child: ListTile(title: const Text('Tema'), trailing: DropdownButton<ThemePreference>(value: s.themePreference, underline: const SizedBox.shrink(), items: const [DropdownMenuItem(value: ThemePreference.system, child: Text('System')), DropdownMenuItem(value: ThemePreference.light, child: Text('Lys')), DropdownMenuItem(value: ThemePreference.dark, child: Text('Mørk'))], onChanged: (v) { if (v != null) store.setThemePreference(v); })))),
         const AppSection(title: 'Sikkerhet', child: Card(child: Column(children: [ListTile(title: Text('Blokkerte brukere'), trailing: Icon(Icons.chevron_right)), ListTile(title: Text('Rapportering og hjelp'), trailing: Icon(Icons.chevron_right))]))),
-        const AppSection(title: 'Om', child: Card(child: ListTile(leading: CircleAvatar(backgroundImage: AssetImage('assets/branding/waycrew_icon.png')), title: Text('WayCrew'), subtitle: Text('v0.2.14 · Deletion & Branding Fix')))),
+        const _AboutSection(),
         const SizedBox(height: 24),
       ]),
     );
@@ -83,6 +86,138 @@ class _AccountSection extends ConsumerWidget {
                   await ref.read(authRepositoryProvider).signOut();
                 }
               },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+class _AboutSection extends StatefulWidget {
+  const _AboutSection();
+
+  @override
+  State<_AboutSection> createState() => _AboutSectionState();
+}
+
+class _AboutSectionState extends State<_AboutSection> {
+  final _updateService = const AppUpdateService();
+  String? _version;
+  bool _checking = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVersion();
+  }
+
+  Future<void> _loadVersion() async {
+    final info = await PackageInfo.fromPlatform();
+    if (!mounted) return;
+    setState(() => _version = info.version);
+  }
+
+  Future<void> _checkForUpdate() async {
+    if (_checking) return;
+    setState(() => _checking = true);
+    try {
+      final result = await _updateService.check();
+      if (!mounted) return;
+      final update = result.update;
+      if (update == null) {
+        await showDialog<void>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('WayCrew er oppdatert'),
+            content: Text('Du bruker siste versjon, v${result.currentVersion}.'),
+            actions: [
+              FilledButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          icon: const Icon(Icons.system_update_alt),
+          title: const Text('Ny versjon tilgjengelig'),
+          content: Text(
+            'Installert: v${update.currentVersion}\n'
+            'Ny versjon: v${update.latestVersion}',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Senere'),
+            ),
+            FilledButton.icon(
+              onPressed: () async {
+                Navigator.pop(dialogContext);
+                await launchUrl(
+                  Uri.parse(update.downloadUrl),
+                  mode: LaunchMode.externalApplication,
+                );
+              },
+              icon: const Icon(Icons.download_outlined),
+              label: const Text('Last ned'),
+            ),
+          ],
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Kunne ikke sjekke etter oppdatering'),
+          content: Text('$error'),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _checking = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AppSection(
+      title: 'Om',
+      child: Card(
+        child: Column(
+          children: [
+            ListTile(
+              leading: const CircleAvatar(
+                backgroundImage: AssetImage('assets/branding/waycrew_icon.png'),
+              ),
+              title: const Text('WayCrew'),
+              subtitle: Text(_version == null ? 'Laster versjon…' : 'Versjon $_version'),
+            ),
+            const Divider(height: 1),
+            ListTile(
+              leading: _checking
+                  ? const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.system_update_alt),
+              title: const Text('Sjekk etter oppdatering'),
+              subtitle: const Text('Kontrollerer siste WayCrew-release på GitHub'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: _checking ? null : _checkForUpdate,
             ),
           ],
         ),

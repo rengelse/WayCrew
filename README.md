@@ -25,3 +25,8 @@ powershell -ExecutionPolicy Bypass -File .\tool\apply_waycrew_android_branding.p
 ```
 
 Scriptet endrer kun Android-appens label til `WayCrew` og erstatter launcher-ikonressursene. Det beholder øvrige Android-permissions/services/oppsett.
+
+
+## Updates
+
+WayCrew checks GitHub Releases for new versions at startup and from Settings → Om. Tagged releases publish a signed APK automatically.

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/supabase/supabase_providers.dart';
+import '../core/update/app_update_gate.dart';
 import '../data/mock/mock_settings_store.dart';
 import '../data/mock/providers.dart';
 import '../features/auth/auth_controller.dart';
@@ -26,6 +27,7 @@ class ActivityNetworkApp extends ConsumerWidget {
       loading: () => MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'WayCrew',
+        builder: (context, child) => AppUpdateGate(child: child ?? const SizedBox.shrink()),
         theme: AppTheme.light,
         darkTheme: AppTheme.dark,
         themeMode: themeMode,
@@ -34,6 +36,7 @@ class ActivityNetworkApp extends ConsumerWidget {
       error: (error, _) => MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'WayCrew',
+        builder: (context, child) => AppUpdateGate(child: child ?? const SizedBox.shrink()),
         theme: AppTheme.light,
         darkTheme: AppTheme.dark,
         themeMode: themeMode,
@@ -44,6 +47,7 @@ class ActivityNetworkApp extends ConsumerWidget {
           return MaterialApp(
             debugShowCheckedModeBanner: false,
             title: 'WayCrew',
+            builder: (context, child) => AppUpdateGate(child: child ?? const SizedBox.shrink()),
             theme: AppTheme.light,
             darkTheme: AppTheme.dark,
             themeMode: themeMode,
@@ -54,6 +58,7 @@ class ActivityNetworkApp extends ConsumerWidget {
         return MaterialApp.router(
           debugShowCheckedModeBanner: false,
           title: 'WayCrew',
+          builder: (context, child) => AppUpdateGate(child: child ?? const SizedBox.shrink()),
           theme: AppTheme.light,
           darkTheme: AppTheme.dark,
           themeMode: themeMode,
