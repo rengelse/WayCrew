@@ -1,3 +1,12 @@
+# WayCrew v0.3.4 – Route Geometry Decode Fix
+
+- Fixed Valhalla route parsing: supports encoded polyline6 as well as GeoJSON shapes.
+- Switched routing endpoint to the canonical `valhalla.openstreetmap.de`.
+- Empty optional waypoint rows no longer block route calculation or publishing.
+- No Supabase migration in this release.
+
+---
+
 # WayCrew release notes
 
 ## v0.3.3 – Route Creation & Live Marker Fix

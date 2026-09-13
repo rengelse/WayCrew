@@ -40,7 +40,6 @@ class _CreateActivityScreenState extends ConsumerState<CreateActivityScreen> {
   bool get _hasValidRoute =>
       routeStart != null &&
       routeDestination != null &&
-      !routeWaypoints.any((p) => p == null) &&
       !routeLoading &&
       plannedRoute != null &&
       plannedRoute!.points.length >= 2;
@@ -237,7 +236,7 @@ class _CreateActivityScreenState extends ConsumerState<CreateActivityScreen> {
                 key: ValueKey('route-waypoint-$index-${routeWaypoints.length}'),
                 label: 'Mellomstopp ${index + 1}',
                 hint: 'Søk etter mellomstopp',
-                requiredSelection: true,
+                requiredSelection: false,
                 onChanged: (value) { setState(() => routeWaypoints[index] = value); _recalculateRoute(); },
               ),
             ),

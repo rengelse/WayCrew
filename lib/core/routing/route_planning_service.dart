@@ -34,8 +34,45 @@ class RoutePlanningException implements Exception {
   String toString() => message;
 }
 
+List<RouteCoordinate> decodeValhallaPolyline6(String encoded) {
+  final points = <RouteCoordinate>[];
+  var index = 0;
+  var latitude = 0;
+  var longitude = 0;
+
+  int nextDelta() {
+    var result = 0;
+    var shift = 0;
+    while (index < encoded.length) {
+      final value = encoded.codeUnitAt(index++) - 63;
+      if (value < 0) {
+        throw const FormatException('Ugyldig Valhalla-polyline.');
+      }
+      result |= (value & 0x1f) << shift;
+      shift += 5;
+      if (value < 0x20) {
+        return (result & 1) != 0 ? ~(result >> 1) : result >> 1;
+      }
+      if (shift > 30) {
+        throw const FormatException('Ugyldig Valhalla-polyline.');
+      }
+    }
+    throw const FormatException('Ufullstendig Valhalla-polyline.');
+  }
+
+  while (index < encoded.length) {
+    latitude += nextDelta();
+    longitude += nextDelta();
+    points.add(RouteCoordinate(
+      latitude: latitude / 1000000.0,
+      longitude: longitude / 1000000.0,
+    ));
+  }
+  return points;
+}
+
 class RoutePlanningService {
-  static const _endpoint = 'https://valhalla1.openstreetmap.de/route';
+  static const _endpoint = 'https://valhalla.openstreetmap.de/route';
 
   Future<PlannedRoute> plan({
     required ActivityKind kind,
@@ -142,15 +179,25 @@ class RoutePlanningService {
     for (final rawLeg in legs) {
       if (rawLeg is! Map) continue;
       final shape = rawLeg['shape'];
+      final legPoints = <RouteCoordinate>[];
       if (shape is Map) {
         final coords = shape['coordinates'];
         if (coords is List) {
           for (final c in coords) {
             if (c is List && c.length >= 2 && c[0] is num && c[1] is num) {
-              final point = RouteCoordinate(latitude: (c[1] as num).toDouble(), longitude: (c[0] as num).toDouble());
-              if (out.isEmpty || out.last.latitude != point.latitude || out.last.longitude != point.longitude) out.add(point);
+              legPoints.add(RouteCoordinate(
+                latitude: (c[1] as num).toDouble(),
+                longitude: (c[0] as num).toDouble(),
+              ));
             }
           }
+        }
+      } else if (shape is String && shape.isNotEmpty) {
+        legPoints.addAll(decodeValhallaPolyline6(shape));
+      }
+      for (final point in legPoints) {
+        if (out.isEmpty || out.last.latitude != point.latitude || out.last.longitude != point.longitude) {
+          out.add(point);
         }
       }
     }
