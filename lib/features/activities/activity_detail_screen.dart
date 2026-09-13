@@ -80,7 +80,19 @@ class ActivityDetailScreen extends ConsumerWidget {
               ),
             ),
             Padding(padding: const EdgeInsets.all(16), child: Row(children: [Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(a.title, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)), Text(a.routeLabel)])), StatusBadge(a.status.label)])),
-            _section(context, 'Nøkkelinformasjon', Card(child: Padding(padding: const EdgeInsets.all(14), child: Wrap(spacing: 18, runSpacing: 12, children: [Text('📍 ${a.meetingPoint}'), Text('👥 ${a.participants.length}/${a.maxParticipants}'), Text('⚡ ${a.pace}'), Text('🛣️ ${a.surface}')])))),
+            _section(context, 'Nøkkelinformasjon', Card(child: Padding(padding: const EdgeInsets.all(14), child: Wrap(spacing: 18, runSpacing: 12, children: [Text('📍 ${a.meetingPoint}'), Text('👥 ${a.participants.length}/${a.maxParticipants}'), if (a.routePlan.distanceKm > 0) Text('🧭 ${a.routePlan.distanceKm.toStringAsFixed(1)} km'), if (a.routePlan.durationMinutes > 0) Text('⏱️ ca. ${a.routePlan.durationMinutes} min'), Text('⚡ ${a.pace}'), Text('🛣️ ${a.surface}')])))),
+            if (a.routeStops.isNotEmpty)
+              _section(context, 'Planlagt rute', Card(child: Column(children: [
+                for (final stop in a.routeStops.where((s) => s.type != 'meeting'))
+                  ListTile(
+                    leading: Icon(stop.type == 'start' ? Icons.trip_origin : stop.type == 'destination' ? Icons.flag_outlined : Icons.location_on_outlined),
+                    title: Text(stop.name),
+                    subtitle: stop.address.trim().isEmpty ? null : Text(stop.address),
+                    trailing: Text(stop.type == 'start' ? 'Start' : stop.type == 'destination' ? 'Mål' : 'Stopp'),
+                  ),
+                if (a.routePlan.provider.isNotEmpty)
+                  Padding(padding: const EdgeInsets.fromLTRB(16, 4, 16, 14), child: Align(alignment: Alignment.centerLeft, child: Text('Rute: ${a.routePlan.provider}', style: Theme.of(context).textTheme.labelSmall))),
+              ]))),
             _section(context, 'Om turen', Text(a.description)),
             if (a.groupId != null) _GroupLink(groupId: a.groupId!),
             if (isLeader && a.participants.any((p) => p.status == ParticipantStatus.requested))

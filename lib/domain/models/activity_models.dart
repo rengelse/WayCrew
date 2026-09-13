@@ -102,6 +102,47 @@ class ActivityParticipant {
   );
 }
 
+
+class RouteCoordinate {
+  final double latitude;
+  final double longitude;
+  const RouteCoordinate({required this.latitude, required this.longitude});
+}
+
+class ActivityRoutePlan {
+  final List<RouteCoordinate> points;
+  final double distanceKm;
+  final int durationMinutes;
+  final String profile;
+  final String provider;
+  const ActivityRoutePlan({
+    this.points = const [],
+    this.distanceKm = 0,
+    this.durationMinutes = 0,
+    this.profile = '',
+    this.provider = '',
+  });
+
+  bool get hasGeometry => points.length >= 2;
+}
+
+class ActivityRouteStop {
+  final String name;
+  final String address;
+  final String type;
+  final int sortOrder;
+  final double latitude;
+  final double longitude;
+  const ActivityRouteStop({
+    required this.name,
+    required this.address,
+    required this.type,
+    required this.sortOrder,
+    required this.latitude,
+    required this.longitude,
+  });
+}
+
 class Activity {
   final String id;
   final String title;
@@ -125,6 +166,8 @@ class Activity {
   final List<ActivityParticipant> participants;
   final bool mine;
   final bool requestPending;
+  final ActivityRoutePlan routePlan;
+  final List<ActivityRouteStop> routeStops;
   const Activity({
     required this.id,
     required this.title,
@@ -148,6 +191,8 @@ class Activity {
     required this.participants,
     this.mine = false,
     this.requestPending = false,
+    this.routePlan = const ActivityRoutePlan(),
+    this.routeStops = const [],
   });
 
   int get confirmedParticipants => participants.where((p) => p.status == ParticipantStatus.active || p.status == ParticipantStatus.approved).length;
@@ -177,6 +222,8 @@ class Activity {
     List<ActivityParticipant>? participants,
     bool? mine,
     bool? requestPending,
+    ActivityRoutePlan? routePlan,
+    List<ActivityRouteStop>? routeStops,
   }) => Activity(
     id: id,
     title: title ?? this.title,
@@ -200,6 +247,8 @@ class Activity {
     participants: participants ?? this.participants,
     mine: mine ?? this.mine,
     requestPending: requestPending ?? this.requestPending,
+    routePlan: routePlan ?? this.routePlan,
+    routeStops: routeStops ?? this.routeStops,
   );
 }
 

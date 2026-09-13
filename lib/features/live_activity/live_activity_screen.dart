@@ -78,6 +78,7 @@ class LiveActivityScreen extends ConsumerWidget {
                           publicState: publicState,
                           currentUserId: currentUserId,
                           participantNames: {for (final participant in a.participants) participant.user.id: participant.user.name},
+                          route: a.routePlan,
                         ),
                 ),
               ),

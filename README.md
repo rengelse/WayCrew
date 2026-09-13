@@ -30,3 +30,7 @@ Scriptet endrer kun Android-appens label til `WayCrew` og erstatter launcher-iko
 ## Updates
 
 WayCrew checks GitHub Releases for new versions at startup and from Settings → Om. Tagged releases publish a signed APK automatically.
+
+
+## Route Planning
+WayCrew v0.3.0 lagrer og viser planlagt rutegeometri med start, mellomstopp og mål. Landbaserte ruter beregnes med Valhalla/OpenStreetMap.

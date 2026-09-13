@@ -9,6 +9,7 @@ class LiveActivityMap extends StatefulWidget {
   final ActivityPublicState? publicState;
   final Map<String, String> participantNames;
   final String? currentUserId;
+  final ActivityRoutePlan route;
 
   const LiveActivityMap({
     super.key,
@@ -16,6 +17,7 @@ class LiveActivityMap extends StatefulWidget {
     required this.participantNames,
     this.publicState,
     this.currentUserId,
+    this.route = const ActivityRoutePlan(),
   });
 
   @override
@@ -32,7 +34,7 @@ class _LiveActivityMapState extends State<LiveActivityMap> {
   @override
   void didUpdateWidget(covariant LiveActivityMap oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (_styleReady && (oldWidget.positions != widget.positions || oldWidget.publicState != widget.publicState)) {
+    if (_styleReady && (oldWidget.positions != widget.positions || oldWidget.publicState != widget.publicState || oldWidget.route != widget.route)) {
       _render();
     }
   }
@@ -94,6 +96,15 @@ class _LiveActivityMapState extends State<LiveActivityMap> {
     final controller = _controller;
     if (controller == null || !_styleReady) return;
     await controller.clearSymbols();
+    await controller.clearLines();
+    if (widget.route.hasGeometry) {
+      await controller.addLine(LineOptions(
+        geometry: [for (final p in widget.route.points) LatLng(p.latitude, p.longitude)],
+        lineColor: '#16A34A',
+        lineWidth: 5.0,
+        lineOpacity: 0.86,
+      ));
+    }
 
     final publicState = widget.publicState;
     if (publicState != null && !publicState.isStale) {

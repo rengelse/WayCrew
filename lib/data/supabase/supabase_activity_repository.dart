@@ -31,7 +31,7 @@ class SupabaseActivityRepository implements ActivityRepository {
   }
 
   @override
-  Future<Activity> create({required String title, required ActivityKind kind, required bool startNow, required ParticipationMode participationMode, String? meetingPoint, String? meetingAddress, double? meetingLatitude, double? meetingLongitude, required String routeStartName, required String routeStartAddress, required double routeStartLatitude, required double routeStartLongitude, required String routeDestinationName, required String routeDestinationAddress, required double routeDestinationLatitude, required double routeDestinationLongitude, String? description, String? groupId}) async {
+  Future<Activity> create({required String title, required ActivityKind kind, required bool startNow, required ParticipationMode participationMode, String? meetingPoint, String? meetingAddress, double? meetingLatitude, double? meetingLongitude, required String routeStartName, required String routeStartAddress, required double routeStartLatitude, required double routeStartLongitude, required String routeDestinationName, required String routeDestinationAddress, required double routeDestinationLatitude, required double routeDestinationLongitude, required ActivityRoutePlan routePlan, List<ActivityRouteStop> routeStops = const [], String? description, String? groupId}) async {
     final cleanMeeting = (meetingPoint ?? '').trim();
     final startsAt = startNow ? DateTime.now() : DateTime.now().add(const Duration(days: 1));
     final result = await _client.rpc('create_activity', params: {
@@ -53,6 +53,24 @@ class SupabaseActivityRepository implements ActivityRepository {
       'p_route_destination_address': routeDestinationAddress.trim(),
       'p_route_destination_latitude': routeDestinationLatitude,
       'p_route_destination_longitude': routeDestinationLongitude,
+      'p_route_geojson': {
+        'type': 'LineString',
+        'coordinates': [for (final point in routePlan.points) [point.longitude, point.latitude]],
+      },
+      'p_route_distance_km': routePlan.distanceKm,
+      'p_route_duration_minutes': routePlan.durationMinutes,
+      'p_route_profile': routePlan.profile,
+      'p_route_provider': routePlan.provider,
+      'p_route_waypoints': [
+        for (final stop in routeStops.where((s) => s.type == 'waypoint'))
+          {
+            'name': stop.name,
+            'address': stop.address,
+            'latitude': stop.latitude,
+            'longitude': stop.longitude,
+            'sort_order': stop.sortOrder,
+          },
+      ],
       'p_max_participants': 12,
       'p_pace': 'Normal',
       'p_surface': kind == ActivityKind.motorcycle ? 'Asfalt' : 'Ikke satt',
@@ -98,10 +116,38 @@ class SupabaseActivityRepository implements ActivityRepository {
     final mineParticipant = participants.where((p) => p.user.id == _userId && !{ParticipantStatus.rejected, ParticipantStatus.left, ParticipantStatus.removed, ParticipantStatus.withdrawn}.contains(p.status)).toList();
     final myPending = mineParticipant.any((p) => p.status == ParticipantStatus.requested);
     final stops = await _client.from('activity_stops').select().eq('activity_id', id).order('sort_order');
+    final routeRowRaw = await _client.from('activity_routes').select().eq('activity_id', id).eq('is_primary', true).maybeSingle();
+    final routeRow = routeRowRaw == null ? null : Map<String, dynamic>.from(routeRowRaw);
+    final routePoints = <RouteCoordinate>[];
+    final geo = routeRow?['route_geojson'];
+    if (geo is Map && geo['coordinates'] is List) {
+      for (final rawPoint in geo['coordinates'] as List) {
+        if (rawPoint is List && rawPoint.length >= 2 && rawPoint[0] is num && rawPoint[1] is num) {
+          routePoints.add(RouteCoordinate(latitude: (rawPoint[1] as num).toDouble(), longitude: (rawPoint[0] as num).toDouble()));
+        }
+      }
+    }
+    final routeStops = <ActivityRouteStop>[];
+    for (final raw in stops) {
+      final stop = Map<String, dynamic>.from(raw);
+      final lat = (stop['latitude'] as num?)?.toDouble();
+      final lon = (stop['longitude'] as num?)?.toDouble();
+      if (lat == null || lon == null) continue;
+      final rawType = stop['stop_type'] as String? ?? 'stop';
+      final normalizedType = rawType == 'stop' && (stop['sort_order'] as num?)?.toInt() == 10 ? 'start' : rawType;
+      routeStops.add(ActivityRouteStop(
+        name: stop['name'] as String? ?? '',
+        address: stop['address'] as String? ?? '',
+        type: normalizedType,
+        sortOrder: (stop['sort_order'] as num?)?.toInt() ?? 0,
+        latitude: lat,
+        longitude: lon,
+      ));
+    }
     final meetingStops = stops.where((s) => s['stop_type'] == 'meeting').cast<Map<String, dynamic>>().toList();
     final meetingStop = meetingStops.isEmpty ? null : meetingStops.first;
-    final destinationStops = stops.where((s) => s['stop_type'] == 'destination').cast<Map<String, dynamic>>().toList();
-    final nextStop = destinationStops.isNotEmpty ? destinationStops : stops.where((s) => s['stop_type'] != 'meeting').cast<Map<String, dynamic>>().toList();
+    final routeProgressStops = stops.where((s) => s['stop_type'] == 'waypoint' || s['stop_type'] == 'destination').cast<Map<String, dynamic>>().toList();
+    final nextStop = routeProgressStops;
     return Activity(
       id: id,
       title: row['title'] as String? ?? 'Aktivitet',
@@ -125,6 +171,14 @@ class SupabaseActivityRepository implements ActivityRepository {
       participants: participants,
       mine: mineParticipant.isNotEmpty,
       requestPending: myPending,
+      routePlan: ActivityRoutePlan(
+        points: routePoints,
+        distanceKm: (routeRow?['distance_km'] as num?)?.toDouble() ?? (row['distance_km'] as num?)?.toDouble() ?? 0,
+        durationMinutes: (routeRow?['duration_minutes'] as num?)?.toInt() ?? 0,
+        profile: routeRow?['routing_profile'] as String? ?? '',
+        provider: routeRow?['routing_provider'] as String? ?? '',
+      ),
+      routeStops: routeStops,
     );
   }
 

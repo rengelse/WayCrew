@@ -20,17 +20,17 @@ class MockActivityStore extends StateNotifier<List<Activity>> {
   }
 
   Activity create({required String title, required ActivityKind kind, required bool startNow, required ParticipationMode participationMode,
-    String? meetingPoint, required String routeStartName, required String routeDestinationName, String? description, String? groupId}) {
+    String? meetingPoint, required String routeStartName, required String routeDestinationName, required ActivityRoutePlan routePlan, List<ActivityRouteStop> routeStops = const [], String? description, String? groupId}) {
     final activity = Activity(
       id: 'local-${DateTime.now().microsecondsSinceEpoch}', title: title.trim().isEmpty ? '${kind.label}-aktivitet' : title.trim(), kind: kind,
       status: startNow ? ActivityStatus.gathering : ActivityStatus.planned, participationMode: participationMode,
       routeLabel: '${routeStartName.trim()} → ${routeDestinationName.trim()}',
       meetingPoint: meetingPoint?.trim().isNotEmpty == true ? meetingPoint!.trim() : 'Møtepunkt ikke satt',
-      startsAt: startNow ? DateTime.now() : DateTime.now().add(const Duration(days: 1)), maxParticipants: 12, distanceKm: 0,
+      startsAt: startNow ? DateTime.now() : DateTime.now().add(const Duration(days: 1)), maxParticipants: 12, distanceKm: routePlan.distanceKm,
       pace: 'Normal', surface: kind == ActivityKind.motorcycle ? 'Asfalt' : 'Ikke satt',
       description: description?.trim().isNotEmpty == true ? description!.trim() : 'Ny aktivitet opprettet lokalt med mockdata.',
       groupId: groupId, nextStopName: routeDestinationName.trim(), nextStopEtaMinutes: startNow ? 15 : null,
-      participants: const [ActivityParticipant(user: currentUser, role: ParticipantRole.leader, status: ParticipantStatus.approved)], mine: true,
+      participants: const [ActivityParticipant(user: currentUser, role: ParticipantRole.leader, status: ParticipantStatus.approved)], mine: true, routePlan: routePlan, routeStops: routeStops,
     );
     state = [activity, ...state];
     return activity;

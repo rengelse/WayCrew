@@ -1,23 +1,18 @@
-# WayCrew Release Notes
+# WayCrew v0.3.0 – Route Planning
 
-## v0.2.19 – Dependency Resolution Fix
+## Nytt
+- Faktisk ruteberegning mellom start og destinasjon via Valhalla/OpenStreetMap for MC, sykkel, fottur, løping, klatring og øvrige landaktiviteter.
+- Opptil seks mellomstopp/waypoints i opprettelsesflyten.
+- Rute forhåndsvises på kart før publisering med beregnet distanse og tid.
+- Rutegeometri, distanse, varighet, routingprofil og leverandør lagres i Supabase.
+- Aktivitetssiden viser planlagt rute, start, mellomstopp og mål.
+- Hovedkartet viser ruten for valgt aktivitet.
+- Live-kartet viser planlagt rute under deltakernes live-posisjoner.
+- Kajakk og ski bruker foreløpig manuell waypoint-geometri i stedet for feilaktig bil-/gangrouting.
 
-- Updated `package_info_plus` to `^10.2.1` to match the dependency requirement from `geolocator ^14.0.3`.
-- Fixes GitHub Actions failure during `flutter create` / dependency resolution.
-- Retains Java 21, signed release APK builds, GitHub Releases publishing and in-app update checks from v0.2.18.
-- No Supabase migration in this release.
+## Backend
+Ny migrering: `20260913220000_route_planning.sql`.
 
-## v0.2.18 – Release Build & GitHub Update Check
-
-- GitHub Actions builds a signed release APK on both `main` pushes and `v*` tags.
-- Release APK is named `WayCrew-vX.Y.Z.apk`.
-- Tags are validated against the version in `pubspec.yaml` before publishing a GitHub Release.
-- WayCrew checks `rengelse/WayCrew` GitHub Releases automatically at startup.
-- A new-version dialog shows installed and available versions and links directly to the APK asset when present.
-- Update checks are throttled to avoid unnecessary GitHub API traffic and repeated prompts.
-- Settings > Om now shows the installed version and includes manual `Sjekk etter oppdatering`.
-- No Supabase migration in this release.
-
-## v0.2.17 – Java 21 CI Fix
-
-- GitHub Actions uses Temurin JDK 21 for MapLibre Android compilation.
+## Build
+- Versjon: `0.3.0+32`
+- Eksisterende signert GitHub Actions release-build beholdt.

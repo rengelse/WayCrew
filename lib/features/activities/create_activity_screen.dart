@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../core/design_system/app_widgets.dart';
 import '../../core/geocoding/place_search_field.dart';
 import '../../core/geocoding/place_search_service.dart';
+import '../../core/map/planned_route_map.dart';
+import '../../core/routing/route_planning_service.dart';
 import '../../data/mock/providers.dart';
 import '../../domain/models/activity_models.dart';
 
@@ -27,6 +29,12 @@ class _CreateActivityScreenState extends ConsumerState<CreateActivityScreen> {
   PlaceSearchResult? meetingPoint;
   PlaceSearchResult? routeStart;
   PlaceSearchResult? routeDestination;
+  final List<PlaceSearchResult?> routeWaypoints = [];
+  final RoutePlanningService _routing = RoutePlanningService();
+  PlannedRoute? plannedRoute;
+  bool routeLoading = false;
+  String? routeError;
+  int _routeGeneration = 0;
   bool publishing = false;
 
   @override
@@ -42,10 +50,49 @@ class _CreateActivityScreenState extends ConsumerState<CreateActivityScreen> {
     super.dispose();
   }
 
+  Future<void> _recalculateRoute() async {
+    final start = routeStart;
+    final destination = routeDestination;
+    final waypoints = routeWaypoints.whereType<PlaceSearchResult>().toList();
+    final generation = ++_routeGeneration;
+    if (start == null || destination == null) {
+      if (mounted) setState(() { plannedRoute = null; routeError = null; routeLoading = false; });
+      return;
+    }
+    setState(() { routeLoading = true; routeError = null; plannedRoute = null; });
+    try {
+      final route = await _routing.plan(kind: kind, start: start, destination: destination, waypoints: waypoints);
+      if (!mounted || generation != _routeGeneration) return;
+      setState(() { plannedRoute = route; routeLoading = false; });
+    } catch (error) {
+      if (!mounted || generation != _routeGeneration) return;
+      setState(() { routeLoading = false; routeError = error.toString(); plannedRoute = null; });
+    }
+  }
+
+  List<ActivityRouteStop> _routeStopsForSave() {
+    final result = <ActivityRouteStop>[];
+    if (routeStart != null) {
+      result.add(ActivityRouteStop(name: routeStart!.name, address: routeStart!.address, type: 'start', sortOrder: 10, latitude: routeStart!.latitude, longitude: routeStart!.longitude));
+    }
+    var order = 20;
+    for (final waypoint in routeWaypoints.whereType<PlaceSearchResult>()) {
+      result.add(ActivityRouteStop(name: waypoint.name, address: waypoint.address, type: 'waypoint', sortOrder: order, latitude: waypoint.latitude, longitude: waypoint.longitude));
+      order += 10;
+    }
+    if (routeDestination != null) {
+      result.add(ActivityRouteStop(name: routeDestination!.name, address: routeDestination!.address, type: 'destination', sortOrder: 100, latitude: routeDestination!.latitude, longitude: routeDestination!.longitude));
+    }
+    if (meetingPoint != null) {
+      result.add(ActivityRouteStop(name: meetingPoint!.name, address: meetingPoint!.address, type: 'meeting', sortOrder: 0, latitude: meetingPoint!.latitude, longitude: meetingPoint!.longitude));
+    }
+    return result;
+  }
+
   Future<void> _publish() async {
     if (publishing) return;
-    if (routeStart == null || routeDestination == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Velg både startpunkt og destinasjon fra stedsforslagene.')));
+    if (routeStart == null || routeDestination == null || routeWaypoints.any((p) => p == null) || plannedRoute == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ruten må være ferdig beregnet før aktiviteten kan publiseres.')));
       return;
     }
     setState(() => publishing = true);
@@ -67,6 +114,14 @@ class _CreateActivityScreenState extends ConsumerState<CreateActivityScreen> {
         routeDestinationAddress: routeDestination!.address,
         routeDestinationLatitude: routeDestination!.latitude,
         routeDestinationLongitude: routeDestination!.longitude,
+        routePlan: ActivityRoutePlan(
+          points: plannedRoute!.points,
+          distanceKm: plannedRoute!.distanceKm,
+          durationMinutes: plannedRoute!.durationMinutes,
+          profile: plannedRoute!.profile,
+          provider: plannedRoute!.provider,
+        ),
+        routeStops: _routeStopsForSave(),
         description: description.text,
         groupId: groupId,
       );
@@ -82,8 +137,8 @@ class _CreateActivityScreenState extends ConsumerState<CreateActivityScreen> {
   }
 
   void _next() {
-    if (step == 2 && (routeStart == null || routeDestination == null)) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Velg startpunkt og destinasjon før du fortsetter.')));
+    if (step == 2 && (routeStart == null || routeDestination == null || routeWaypoints.any((p) => p == null) || plannedRoute == null || routeLoading)) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Velg start og mål, og vent til ruten er beregnet.')));
       return;
     }
     setState(() => step++);
@@ -125,7 +180,7 @@ class _CreateActivityScreenState extends ConsumerState<CreateActivityScreen> {
         Wrap(
           spacing: 10,
           runSpacing: 10,
-          children: ActivityKind.values.map((k) => ChoiceChip(label: Text('${k.emoji} ${k.label}'), selected: k == kind, onSelected: (_) => setState(() => kind = k))).toList(),
+          children: ActivityKind.values.map((k) => ChoiceChip(label: Text('${k.emoji} ${k.label}'), selected: k == kind, onSelected: (_) { setState(() => kind = k); _recalculateRoute(); })).toList(),
         ),
       ]);
 
@@ -156,7 +211,7 @@ class _CreateActivityScreenState extends ConsumerState<CreateActivityScreen> {
           label: 'Startpunkt',
           hint: 'Søk etter sted, adresse, butikk eller stasjon',
           requiredSelection: true,
-          onChanged: (value) => setState(() => routeStart = value),
+          onChanged: (value) { setState(() => routeStart = value); _recalculateRoute(); },
         ),
         const SizedBox(height: 16),
         PlaceSearchField(
@@ -164,8 +219,70 @@ class _CreateActivityScreenState extends ConsumerState<CreateActivityScreen> {
           label: 'Destinasjon',
           hint: 'Hvor skal turen ende?',
           requiredSelection: true,
-          onChanged: (value) => setState(() => routeDestination = value),
+          onChanged: (value) { setState(() => routeDestination = value); _recalculateRoute(); },
         ),
+        const SizedBox(height: 12),
+        for (var index = 0; index < routeWaypoints.length; index++) ...[
+          Row(children: [
+            Expanded(
+              child: PlaceSearchField(
+                key: ValueKey('route-waypoint-$index-${routeWaypoints.length}'),
+                label: 'Mellomstopp ${index + 1}',
+                hint: 'Søk etter mellomstopp',
+                requiredSelection: true,
+                onChanged: (value) { setState(() => routeWaypoints[index] = value); _recalculateRoute(); },
+              ),
+            ),
+            IconButton(
+              tooltip: 'Fjern mellomstopp',
+              onPressed: () { setState(() => routeWaypoints.removeAt(index)); _recalculateRoute(); },
+              icon: const Icon(Icons.remove_circle_outline),
+            ),
+          ]),
+          const SizedBox(height: 10),
+        ],
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: routeWaypoints.length >= 6 ? null : () => setState(() => routeWaypoints.add(null)),
+            icon: const Icon(Icons.add_location_alt_outlined),
+            label: const Text('Legg til mellomstopp'),
+          ),
+        ),
+        if (routeLoading) ...[
+          const SizedBox(height: 8),
+          const LinearProgressIndicator(),
+          const SizedBox(height: 6),
+          const Text('Beregner rute langs veinett/sti …'),
+        ],
+        if (routeError != null) ...[
+          const SizedBox(height: 8),
+          Text(routeError!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+          TextButton.icon(onPressed: _recalculateRoute, icon: const Icon(Icons.refresh), label: const Text('Prøv ruteberegning igjen')),
+        ],
+        if (plannedRoute != null) ...[
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 250,
+            child: PlannedRouteMap(
+              route: ActivityRoutePlan(
+                points: plannedRoute!.points,
+                distanceKm: plannedRoute!.distanceKm,
+                durationMinutes: plannedRoute!.durationMinutes,
+                profile: plannedRoute!.profile,
+                provider: plannedRoute!.provider,
+              ),
+              stops: _routeStopsForSave().where((s) => s.type != 'meeting').toList(),
+              compact: true,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(spacing: 12, runSpacing: 6, children: [
+            Text('${plannedRoute!.distanceKm.toStringAsFixed(1)} km'),
+            Text('ca. ${plannedRoute!.durationMinutes} min'),
+            Text(plannedRoute!.provider),
+          ]),
+        ],
         const SizedBox(height: 18),
         Text('Oppmøte', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
         const SizedBox(height: 6),
@@ -229,6 +346,8 @@ class _CreateActivityScreenState extends ConsumerState<CreateActivityScreen> {
             const SizedBox(height: 8),
             Text(startNow ? 'Starter nå · Samling' : 'Planlagt aktivitet'),
             Text('Rute: ${routeStart?.name ?? 'Ikke satt'} → ${routeDestination?.name ?? 'Ikke satt'}'),
+            if (routeWaypoints.whereType<PlaceSearchResult>().isNotEmpty) Text('Mellomstopp: ${routeWaypoints.whereType<PlaceSearchResult>().map((p) => p.name).join(' · ')}'),
+            if (plannedRoute != null) Text('${plannedRoute!.distanceKm.toStringAsFixed(1)} km · ca. ${plannedRoute!.durationMinutes} min'),
             if (meetingPoint != null) Text('Oppmøte: ${meetingPoint!.name}'),
             Text('Deltakelse: ${_modeLabel(mode)}'),
             if (groupName != null) Text('Gruppe: $groupName'),
