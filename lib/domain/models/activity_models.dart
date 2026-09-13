@@ -488,3 +488,29 @@ class LivePositionSample {
     required this.sequence,
   });
 }
+class BlockedUserEntry {
+  final String userId;
+  final String displayName;
+  final DateTime blockedAt;
+  const BlockedUserEntry({required this.userId, required this.displayName, required this.blockedAt});
+}
+
+class UserReportEntry {
+  final String id;
+  final String category;
+  final String description;
+  final String? targetType;
+  final String? targetId;
+  final String status;
+  final DateTime createdAt;
+  const UserReportEntry({
+    required this.id,
+    required this.category,
+    required this.description,
+    this.targetType,
+    this.targetId,
+    required this.status,
+    required this.createdAt,
+  });
+}
+

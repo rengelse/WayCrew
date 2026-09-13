@@ -9,6 +9,7 @@ import '../supabase/supabase_chat_repository.dart';
 import '../supabase/supabase_live_tracking_repository.dart';
 import '../supabase/supabase_notification_repository.dart';
 import '../supabase/supabase_history_repository.dart';
+import '../supabase/supabase_safety_repository.dart';
 import '../../domain/models/activity_models.dart';
 import '../../domain/repositories/repositories.dart';
 import 'mock_activity_store.dart';
@@ -194,3 +195,21 @@ final groupActivitiesProvider = FutureProvider.autoDispose.family<List<Activity>
 });
 
 extension _ProvidersFirstOrNull<E> on Iterable<E> { E? get firstOrNull => isEmpty ? null : first; }
+
+final safetyRepositoryProvider = Provider<SafetyRepository?>((ref) {
+  final demo = ref.watch(localDemoModeProvider);
+  final user = ref.watch(currentSupabaseUserProvider);
+  if (!demo && user != null) return SupabaseSafetyRepository(ref.watch(supabaseClientProvider));
+  return null;
+});
+
+final blockedUsersProvider = FutureProvider.autoDispose<List<BlockedUserEntry>>((ref) async {
+  final repository = ref.watch(safetyRepositoryProvider);
+  return repository == null ? const <BlockedUserEntry>[] : repository.blockedUsers();
+});
+
+final myReportsProvider = FutureProvider.autoDispose<List<UserReportEntry>>((ref) async {
+  final repository = ref.watch(safetyRepositoryProvider);
+  return repository == null ? const <UserReportEntry>[] : repository.myReports();
+});
+

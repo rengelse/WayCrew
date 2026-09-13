@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../../core/design_system/app_widgets.dart';
 import '../../data/mock/mock_settings_store.dart';
@@ -40,7 +41,10 @@ class SettingsScreen extends ConsumerWidget {
           const ListTile(title: Text('Last ned mine data'), subtitle: Text('Kommer med backend-integrasjonen'), trailing: Icon(Icons.download_outlined)),
         ]))),
         AppSection(title: 'Kart og visning', child: Card(child: ListTile(title: const Text('Tema'), trailing: DropdownButton<ThemePreference>(value: s.themePreference, underline: const SizedBox.shrink(), items: const [DropdownMenuItem(value: ThemePreference.system, child: Text('System')), DropdownMenuItem(value: ThemePreference.light, child: Text('Lys')), DropdownMenuItem(value: ThemePreference.dark, child: Text('Mørk'))], onChanged: (v) { if (v != null) store.setThemePreference(v); })))),
-        const AppSection(title: 'Sikkerhet', child: Card(child: Column(children: [ListTile(title: Text('Blokkerte brukere'), trailing: Icon(Icons.chevron_right)), ListTile(title: Text('Rapportering og hjelp'), trailing: Icon(Icons.chevron_right))]))),
+        AppSection(title: 'Sikkerhet', child: Card(child: Column(children: [
+          ListTile(leading: const Icon(Icons.person_off_outlined), title: const Text('Blokkerte brukere'), trailing: const Icon(Icons.chevron_right), onTap: () => context.push('/settings/blocked')),
+          ListTile(leading: const Icon(Icons.shield_outlined), title: const Text('Rapportering og hjelp'), trailing: const Icon(Icons.chevron_right), onTap: () => context.push('/settings/report')),
+        ]))),
         const _AboutSection(),
         const SizedBox(height: 24),
       ]),

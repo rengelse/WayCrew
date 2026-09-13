@@ -13,6 +13,8 @@ import '../features/groups/group_admin_screen.dart';
 import '../features/chat/chat_screen.dart';
 import '../features/profile/profile_screen.dart';
 import '../features/settings/settings_screen.dart';
+import '../features/settings/blocked_users_screen.dart';
+import '../features/settings/report_help_screen.dart';
 import '../features/notifications/notifications_screen.dart';
 import '../features/history/history_screen.dart';
 
@@ -37,6 +39,8 @@ final appRouterProvider = Provider<GoRouter>((ref) => GoRouter(
     GoRoute(path: '/group/:id/admin', builder: (_, s) => GroupAdminScreen(groupId: s.pathParameters['id']!)),
     GoRoute(path: '/group/:id/chat', builder: (_, s) => ChatScreen(title: 'Gruppechat', entityId: s.pathParameters['id']!, isGroup: true)),
     GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
+    GoRoute(path: '/settings/blocked', builder: (_, __) => const BlockedUsersScreen()),
+    GoRoute(path: '/settings/report', builder: (_, s) => ReportHelpScreen(targetType: s.uri.queryParameters['targetType'], targetId: s.uri.queryParameters['targetId'])),
     GoRoute(path: '/notifications', builder: (_, __) => const NotificationsScreen()),
     GoRoute(path: '/history', builder: (_, __) => const HistoryScreen()),
     GoRoute(path: '/history/:id', builder: (_, s) => HistoryDetailScreen(historyId: s.pathParameters['id']!)),

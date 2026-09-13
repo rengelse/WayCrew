@@ -55,6 +55,9 @@ class LiveActivityScreen extends ConsumerWidget {
         final livePositions = livePositionsAsync.valueOrNull ?? const <LiveParticipantPosition>[];
         final publicState = publicStateAsync.valueOrNull;
         final currentUserId = ref.watch(currentActivityUserIdProvider);
+        final blockedIds = ref.watch(blockedUsersProvider).valueOrNull?.map((item) => item.userId).toSet() ?? const <String>{};
+        final visibleParticipants = a.participants.where((p) => p.user.id == currentUserId || !blockedIds.contains(p.user.id)).toList();
+        final visibleLivePositions = livePositions.where((p) => p.userId == currentUserId || !blockedIds.contains(p.userId)).toList();
         final me = a.participants.where((p) => p.user.id == currentUserId).firstOrNull;
         final isLeader = me?.role == ParticipantRole.leader;
         final nextStop = a.nextStopName ?? a.meetingPoint;
@@ -74,10 +77,10 @@ class LiveActivityScreen extends ConsumerWidget {
                   child: demoMode
                       ? ActivityMap(activities: [a], selectedActivityId: a.id)
                       : LiveActivityMap(
-                          positions: livePositions,
+                          positions: visibleLivePositions,
                           publicState: publicState,
                           currentUserId: currentUserId,
-                          participantNames: {for (final participant in a.participants) participant.user.id: participant.user.name},
+                          participantNames: {for (final participant in visibleParticipants) participant.user.id: participant.user.name},
                           route: a.routePlan,
                           activityKind: a.kind,
                         ),
@@ -88,7 +91,7 @@ class LiveActivityScreen extends ConsumerWidget {
                 left: 24,
                 right: 24,
                 child: Column(children: [
-                  Row(children: [StatusBadge(a.status.label), const Spacer(), FilledButton.tonalIcon(onPressed: () => _participants(context, a, livePositions), icon: const Icon(Icons.my_location), label: const Text('Vis gruppen'))]),
+                  Row(children: [StatusBadge(a.status.label), const Spacer(), FilledButton.tonalIcon(onPressed: () => _participants(context, ref, a, visibleLivePositions), icon: const Icon(Icons.groups_outlined), label: const Text('Vis gruppen'))]),
                   if (!trackingEnabled || (!demoMode && !trackingState.tracking))
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
@@ -155,15 +158,15 @@ class LiveActivityScreen extends ConsumerWidget {
                           height: 64,
                           child: ListView(
                             scrollDirection: Axis.horizontal,
-                            children: a.participants.where((p) => p.status == ParticipantStatus.active || p.status == ParticipantStatus.approved).map((p) => Padding(
+                            children: visibleParticipants.where((p) => p.status == ParticipantStatus.active || p.status == ParticipantStatus.approved).map((p) => Padding(
                               padding: const EdgeInsets.only(right: 12),
-                              child: Column(children: [CircleAvatar(child: Text(p.user.name.characters.first)), Text(_participantLabel(p), style: const TextStyle(fontSize: 11))]),
+                              child: Column(children: [CircleAvatar(child: Text(_activityMarker(a.kind))), Text(_privateParticipantName(p.user.name, visibleParticipants), style: const TextStyle(fontSize: 11))]),
                             )).toList(),
                           ),
                         ),
                         const SizedBox(height: 8),
                         Row(children: [
-                          Expanded(child: OutlinedButton.icon(onPressed: () => _participants(context, a, livePositions), icon: const Icon(Icons.people_outline), label: const Text('Deltakere'))),
+                          Expanded(child: OutlinedButton.icon(onPressed: () => _participants(context, ref, a, visibleLivePositions), icon: const Icon(Icons.people_outline), label: const Text('Deltakere'))),
                           const SizedBox(width: 8),
                           Expanded(child: FilledButton.tonalIcon(onPressed: trackingEnabled ? () => _catchUp(context, a, demoMode) : null, icon: const Icon(Icons.route), label: const Text('Ta meg igjen'))),
                         ]),
@@ -191,30 +194,121 @@ class LiveActivityScreen extends ConsumerWidget {
     );
   }
 
-  String _participantLabel(ActivityParticipant p) => p.role == ParticipantRole.leader ? 'Leder' : p.role == ParticipantRole.sweep ? 'Baktropp' : p.user.name;
 
-  void _participants(BuildContext context, Activity a, List<LiveParticipantPosition> livePositions) => showModalBottomSheet<void>(
+  void _participants(BuildContext context, WidgetRef ref, Activity a, List<LiveParticipantPosition> livePositions) => showModalBottomSheet<void>(
         context: context,
         showDragHandle: true,
-        builder: (context) => SafeArea(
-          child: ListView(shrinkWrap: true, padding: const EdgeInsets.only(bottom: 20), children: [
-            Padding(padding: const EdgeInsets.all(16), child: Text('Deltakere', style: Theme.of(context).textTheme.titleLarge)),
-            ...a.participants.map((p) => ListTile(
-                  leading: CircleAvatar(child: Text(p.user.name.characters.first)),
-                  title: Text(p.user.name),
-                  subtitle: Text(_liveParticipantSubtitle(p, livePositions)),
-                  trailing: _liveParticipantTrailing(p, livePositions),
-                )),
-          ]),
-        ),
+        builder: (sheetContext) {
+          final currentUserId = ref.read(currentActivityUserIdProvider);
+          final blockedIds = ref.read(blockedUsersProvider).valueOrNull?.map((item) => item.userId).toSet() ?? const <String>{};
+          final visibleParticipants = a.participants.where((p) => p.user.id == currentUserId || !blockedIds.contains(p.user.id)).toList();
+          return SafeArea(
+            child: ListView(shrinkWrap: true, padding: const EdgeInsets.only(bottom: 20), children: [
+              Padding(padding: const EdgeInsets.all(16), child: Text('Deltakere', style: Theme.of(sheetContext).textTheme.titleLarge)),
+              ...visibleParticipants.map((p) => ListTile(
+                    leading: CircleAvatar(child: Text(_activityMarker(a.kind))),
+                    title: Text(_privateParticipantName(p.user.name, visibleParticipants)),
+                    subtitle: Text(_liveParticipantSubtitle(p, livePositions)),
+                    trailing: p.user.id == currentUserId
+                        ? _liveParticipantTrailing(p, livePositions)
+                        : PopupMenuButton<String>(
+                            tooltip: 'Deltakerhandlinger',
+                            onSelected: (value) async {
+                              if (value == 'block') {
+                                final repository = ref.read(safetyRepositoryProvider);
+                                if (repository == null) {
+                                  return;
+                                }
+                                final confirmed = await showDialog<bool>(
+                                      context: sheetContext,
+                                      builder: (dialogContext) => AlertDialog(
+                                        title: const Text('Blokker bruker?'),
+                                        content: Text('${_privateParticipantName(p.user.name, visibleParticipants)} blir lagt til under Blokkerte brukere.'),
+                                        actions: [
+                                          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Avbryt')),
+                                          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Blokker')),
+                                        ],
+                                      ),
+                                    ) ??
+                                    false;
+                                if (!confirmed) {
+                                  return;
+                                }
+                                try {
+                                  await repository.blockUser(p.user.id);
+                                  ref.invalidate(blockedUsersProvider);
+                                  if (sheetContext.mounted) {
+                                    ScaffoldMessenger.of(sheetContext).showSnackBar(const SnackBar(content: Text('Brukeren er blokkert.')));
+                                  }
+                                } catch (error) {
+                                  if (sheetContext.mounted) {
+                                    ScaffoldMessenger.of(sheetContext).showSnackBar(SnackBar(content: Text('Kunne ikke blokkere bruker: $error')));
+                                  }
+                                }
+                              } else if (value == 'report') {
+                                if (sheetContext.mounted) {
+                                  Navigator.pop(sheetContext);
+                                }
+                                if (context.mounted) {
+                                  context.push(Uri(path: '/settings/report', queryParameters: {'targetType': 'user', 'targetId': p.user.id}).toString());
+                                }
+                              }
+                            },
+                            itemBuilder: (_) => const [
+                              PopupMenuItem(value: 'report', child: ListTile(leading: Icon(Icons.flag_outlined), title: Text('Rapporter bruker'), contentPadding: EdgeInsets.zero)),
+                              PopupMenuItem(value: 'block', child: ListTile(leading: Icon(Icons.person_off_outlined), title: Text('Blokker bruker'), contentPadding: EdgeInsets.zero)),
+                            ],
+                          ),
+                  )),
+            ]),
+          );
+        },
       );
 
+  String _privateParticipantName(String fullName, List<ActivityParticipant> participants) {
+    final parts = fullName.trim().split(RegExp(r'\s+')).where((part) => part.isNotEmpty).toList();
+    if (parts.isEmpty) {
+      return 'Deltaker';
+    }
+    final firstName = parts.first;
+    final sameFirst = participants.where((participant) {
+      final candidate = participant.user.name.trim().split(RegExp(r'\s+')).where((part) => part.isNotEmpty).toList();
+      return candidate.isNotEmpty && candidate.first.toLowerCase() == firstName.toLowerCase();
+    }).length;
+    if (sameFirst <= 1 || parts.length == 1) {
+      return firstName;
+    }
+    return '${firstName.characters.first.toUpperCase()}.${parts.last.characters.first.toUpperCase()}.';
+  }
+
+  String _activityMarker(ActivityKind kind) => switch (kind) {
+        ActivityKind.motorcycle => '🏍️',
+        ActivityKind.ski => '⛷️',
+        ActivityKind.cycling => '🚵',
+        ActivityKind.hiking => '🥾',
+        ActivityKind.running => '🏃',
+        ActivityKind.kayak => '🛶',
+        ActivityKind.climbing => '🧗',
+        ActivityKind.other => '📍',
+      };
+
+
   String _trackingMessage(bool demoMode, bool locationEnabled, LiveTrackingState trackingState) {
-    if (demoMode) return locationEnabled ? 'Demo-posisjon er aktiv.' : 'Din liveposisjon er satt på pause.';
-    if (!locationEnabled) return 'Din liveposisjon er satt på pause.';
-    if (trackingState.starting) return 'Starter GPS og live-sporing …';
-    if (trackingState.permissionDenied || trackingState.serviceDisabled) return trackingState.error ?? 'GPS er ikke tilgjengelig.';
-    if (trackingState.error != null) return trackingState.error!;
+    if (demoMode) {
+      return locationEnabled ? 'Demo-posisjon er aktiv.' : 'Din liveposisjon er satt på pause.';
+    }
+    if (!locationEnabled) {
+      return 'Din liveposisjon er satt på pause.';
+    }
+    if (trackingState.starting) {
+      return 'Starter GPS og live-sporing …';
+    }
+    if (trackingState.permissionDenied || trackingState.serviceDisabled) {
+      return trackingState.error ?? 'GPS er ikke tilgjengelig.';
+    }
+    if (trackingState.error != null) {
+      return trackingState.error!;
+    }
     return trackingState.tracking ? 'Liveposisjon deles med deltakerne.' : 'Live-sporing er ikke startet.';
   }
 

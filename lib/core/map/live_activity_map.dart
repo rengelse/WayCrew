@@ -66,7 +66,7 @@ class _LiveActivityMapState extends State<LiveActivityMap> {
           ),
           Positioned(
             right: 12,
-            top: 12,
+            top: 72,
             child: Material(
               color: Theme.of(context).colorScheme.surface.withValues(alpha: .94),
               borderRadius: BorderRadius.circular(12),
@@ -126,13 +126,14 @@ class _LiveActivityMapState extends State<LiveActivityMap> {
     for (final position in widget.positions.where((p) => p.sharing)) {
       final mine = position.userId == widget.currentUserId;
       final name = widget.participantNames[position.userId] ?? 'Deltaker';
-      final role = switch (position.role) {
-        ParticipantRole.leader => 'Leder',
-        ParticipantRole.sweep => 'Baktropp',
-        ParticipantRole.participant => name,
+      final privateName = _displayName(name);
+      final rolePrefix = switch (position.role) {
+        ParticipantRole.leader => '★ ',
+        ParticipantRole.sweep => '◆ ',
+        ParticipantRole.participant => '',
       };
       final freshness = position.isStale ? ' · gammel' : '';
-      final displayName = mine ? 'Du' : role;
+      final displayName = mine ? 'Du' : '$rolePrefix$privateName';
       await controller.addSymbol(SymbolOptions(
         geometry: LatLng(position.latitude, position.longitude),
         textField: '${_activityMarker(widget.activityKind)}\n$displayName$freshness',
@@ -144,6 +145,22 @@ class _LiveActivityMapState extends State<LiveActivityMap> {
         zIndex: mine ? 12 : position.role == ParticipantRole.leader ? 10 : 8,
       ));
     }
+  }
+
+  String _displayName(String fullName) {
+    final parts = fullName.trim().split(RegExp(r'\s+')).where((part) => part.isNotEmpty).toList();
+    if (parts.isEmpty) {
+      return 'Deltaker';
+    }
+    final firstName = parts.first;
+    final sameFirstNameCount = widget.participantNames.values.where((candidate) {
+      final candidateParts = candidate.trim().split(RegExp(r'\s+')).where((part) => part.isNotEmpty).toList();
+      return candidateParts.isNotEmpty && candidateParts.first.toLowerCase() == firstName.toLowerCase();
+    }).length;
+    if (sameFirstNameCount <= 1 || parts.length == 1) {
+      return firstName;
+    }
+    return '${firstName.characters.first.toUpperCase()}.${parts.last.characters.first.toUpperCase()}.';
   }
 
   String _activityMarker(ActivityKind kind) => switch (kind) {

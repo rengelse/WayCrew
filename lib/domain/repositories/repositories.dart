@@ -68,3 +68,11 @@ abstract interface class LiveTrackingRepository {
   Stream<ActivityPublicState?> watchPublicState(String activityId);
   Stream<List<ActivityPublicState>> watchPublicStates();
 }
+
+abstract interface class SafetyRepository {
+  Future<List<BlockedUserEntry>> blockedUsers();
+  Future<void> blockUser(String userId);
+  Future<void> unblockUser(String userId);
+  Future<void> submitReport({required String category, required String description, String? targetType, String? targetId});
+  Future<List<UserReportEntry>> myReports();
+}

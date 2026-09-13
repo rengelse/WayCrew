@@ -1,5 +1,16 @@
 # Release notes
 
+## v0.3.7 – Live Map UX & Safety
+
+- Moves the live-map group-centering control below the top action row so it no longer overlaps `Vis gruppen`.
+- Live participants use activity-specific visual markers (MC, ski, cycling, hiking, running, kayak, climbing) with privacy-reduced names.
+- Participant labels show first name; duplicate first names fall back to first + last initial.
+- Adds functional blocked-user management backed by Supabase.
+- Adds user reporting with categories, description, report history and server-side validation.
+- Adds support/help with direct support email action.
+- Participant sheet now allows reporting or blocking another participant.
+- Adds Supabase migration `20260913224500_safety_blocking_reporting.sql`.
+
 ## v0.3.6 – Routing Transport Fix
 
 - Robust Valhalla transport: POST first, automatic GET `?json=` retry on HTTP 405.
