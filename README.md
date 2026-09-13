@@ -1,6 +1,6 @@
-# WayCrew v0.2.15
+# WayCrew v0.3.2
 
-Gjeldende versjon: **0.2.15+27**. Denne versjonen retter Photon-basert stedsøk/autocomplete.
+Gjeldende versjon: **0.3.2+34**. WayCrew kan nå laste ned en ny signert APK direkte i appen, vise nedlastingsfremdrift og åpne Android-installasjonen automatisk når filen er klar.
 
 # WayCrew
 
@@ -34,3 +34,7 @@ WayCrew checks GitHub Releases for new versions at startup and from Settings →
 
 ## Route Planning
 WayCrew v0.3.1 lagrer og viser planlagt rutegeometri med start, mellomstopp og mål. Landbaserte ruter beregnes med Valhalla/OpenStreetMap.
+
+
+## In-app updates
+Fra v0.3.2 laster WayCrew APK-en direkte fra siste GitHub Release. Android viser fortsatt den vanlige systemdialogen for å godkjenne installasjonen. Samme release-signering må brukes på alle APK-er.

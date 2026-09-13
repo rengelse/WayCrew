@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../core/design_system/app_widgets.dart';
 import '../../data/mock/mock_settings_store.dart';
 import '../../data/mock/providers.dart';
 import '../../core/supabase/supabase_providers.dart';
+import '../../core/update/app_update_installer.dart';
 import '../../core/update/app_update_service.dart';
 import '../auth/auth_controller.dart';
 
@@ -160,10 +160,8 @@ class _AboutSectionState extends State<_AboutSection> {
             FilledButton.icon(
               onPressed: () async {
                 Navigator.pop(dialogContext);
-                await launchUrl(
-                  Uri.parse(update.downloadUrl),
-                  mode: LaunchMode.externalApplication,
-                );
+                if (!mounted) return;
+                await showAppUpdateDownload(context, update);
               },
               icon: const Icon(Icons.download_outlined),
               label: const Text('Last ned'),

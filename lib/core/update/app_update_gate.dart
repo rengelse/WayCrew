@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:url_launcher/url_launcher.dart';
-
+import 'app_update_installer.dart';
 import 'app_update_service.dart';
 
 class AppUpdateGate extends StatefulWidget {
@@ -75,8 +74,8 @@ class _AppUpdateGateState extends State<AppUpdateGate> {
             FilledButton.icon(
               onPressed: () async {
                 Navigator.pop(dialogContext);
-                final uri = Uri.parse(update.downloadUrl);
-                await launchUrl(uri, mode: LaunchMode.externalApplication);
+                if (!mounted) return;
+                await showAppUpdateDownload(context, update);
               },
               icon: const Icon(Icons.download_outlined),
               label: const Text('Last ned'),

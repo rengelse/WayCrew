@@ -1,3 +1,13 @@
+# v0.3.2 – In-app APK Update
+
+- WayCrew now downloads the APK directly inside the app instead of opening GitHub in the browser.
+- Download progress is shown in-app.
+- When the APK is ready, WayCrew opens Android's installer automatically.
+- Added Android `REQUEST_INSTALL_PACKAGES`, internal OTA FileProvider configuration and desugaring required by the updater.
+- Manual update checks in Settings use the same in-app download/install flow.
+- Regular Android apps still require the user to approve the final installation prompt.
+- No Supabase changes.
+
 # v0.3.1 – Route Planning Analyzer Fix
 
 - Fixed `curly_braces_in_flow_control_structures` in route planning service.
