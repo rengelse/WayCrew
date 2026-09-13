@@ -10,6 +10,7 @@ class LiveActivityMap extends StatefulWidget {
   final Map<String, String> participantNames;
   final String? currentUserId;
   final ActivityRoutePlan route;
+  final ActivityKind activityKind;
 
   const LiveActivityMap({
     super.key,
@@ -18,6 +19,7 @@ class LiveActivityMap extends StatefulWidget {
     this.publicState,
     this.currentUserId,
     this.route = const ActivityRoutePlan(),
+    this.activityKind = ActivityKind.other,
   });
 
   @override
@@ -130,9 +132,10 @@ class _LiveActivityMapState extends State<LiveActivityMap> {
         ParticipantRole.participant => name,
       };
       final freshness = position.isStale ? ' · gammel' : '';
+      final displayName = mine ? 'Du' : role;
       await controller.addSymbol(SymbolOptions(
         geometry: LatLng(position.latitude, position.longitude),
-        textField: '${mine ? 'Du' : role}$freshness',
+        textField: '${_activityMarker(widget.activityKind)}\n$displayName$freshness',
         textSize: mine ? 15 : 13,
         textColor: position.isStale ? '#6B7280' : (mine ? '#0B5C3B' : '#17202A'),
         textHaloColor: '#FFFFFF',
@@ -142,6 +145,17 @@ class _LiveActivityMapState extends State<LiveActivityMap> {
       ));
     }
   }
+
+  String _activityMarker(ActivityKind kind) => switch (kind) {
+        ActivityKind.motorcycle => '🏍️',
+        ActivityKind.ski => '⛷️',
+        ActivityKind.cycling => '🚵',
+        ActivityKind.hiking => '🥾',
+        ActivityKind.running => '🏃',
+        ActivityKind.kayak => '🛶',
+        ActivityKind.climbing => '🧗',
+        ActivityKind.other => '📍',
+      };
 
   Future<void> _fit() async {
     final controller = _controller;

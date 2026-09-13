@@ -103,7 +103,7 @@ def configure_desugaring() -> None:
         text = text.rstrip() + (
             "\n\n"
             "dependencies {\n"
-            "    coreLibraryDesugaring(\"com.android.tools:desugar_jdk_libs:2.0.3\")\n"
+            "    coreLibraryDesugaring(\"com.android.tools:desugar_jdk_libs:2.1.4\")\n"
             "}\n"
         )
 

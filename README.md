@@ -1,4 +1,4 @@
-# WayCrew v0.3.2
+# WayCrew v0.3.3
 
 Gjeldende versjon: **0.3.2+34**. WayCrew kan nå laste ned en ny signert APK direkte i appen, vise nedlastingsfremdrift og åpne Android-installasjonen automatisk når filen er klar.
 
@@ -37,4 +37,4 @@ WayCrew v0.3.1 lagrer og viser planlagt rutegeometri med start, mellomstopp og m
 
 
 ## In-app updates
-Fra v0.3.2 laster WayCrew APK-en direkte fra siste GitHub Release. Android viser fortsatt den vanlige systemdialogen for å godkjenne installasjonen. Samme release-signering må brukes på alle APK-er.
+Fra v0.3.3 laster WayCrew APK-en direkte fra siste GitHub Release. Android viser fortsatt den vanlige systemdialogen for å godkjenne installasjonen. Samme release-signering må brukes på alle APK-er.

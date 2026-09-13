@@ -1,3 +1,14 @@
+# WayCrew release notes
+
+## v0.3.3 – Route Creation & Live Marker Fix
+
+- Fix Android release build: `desugar_jdk_libs` upgraded to 2.1.4 for `ota_update`.
+- Add `cupertino_icons` dependency required by referenced Cupertino icon data.
+- Harden route creation: activity cannot be published unless route geometry has at least two points.
+- Send route geometry to Supabase as explicit JSON text and parse/validate server-side.
+- Live map participant labels now use activity-specific markers (MC, ski, cycling, hiking, running, kayak, climbing) with participant name/role.
+- No silent fallback to empty route geometry.
+
 # v0.3.2 – In-app APK Update
 
 - WayCrew now downloads the APK directly inside the app instead of opening GitHub in the browser.

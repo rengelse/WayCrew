@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../domain/models/activity_models.dart';
@@ -53,10 +55,10 @@ class SupabaseActivityRepository implements ActivityRepository {
       'p_route_destination_address': routeDestinationAddress.trim(),
       'p_route_destination_latitude': routeDestinationLatitude,
       'p_route_destination_longitude': routeDestinationLongitude,
-      'p_route_geojson': {
+      'p_route_geojson_text': jsonEncode({
         'type': 'LineString',
         'coordinates': [for (final point in routePlan.points) [point.longitude, point.latitude]],
-      },
+      }),
       'p_route_distance_km': routePlan.distanceKm,
       'p_route_duration_minutes': routePlan.durationMinutes,
       'p_route_profile': routePlan.profile,

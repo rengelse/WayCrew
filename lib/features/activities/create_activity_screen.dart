@@ -37,6 +37,14 @@ class _CreateActivityScreenState extends ConsumerState<CreateActivityScreen> {
   int _routeGeneration = 0;
   bool publishing = false;
 
+  bool get _hasValidRoute =>
+      routeStart != null &&
+      routeDestination != null &&
+      !routeWaypoints.any((p) => p == null) &&
+      !routeLoading &&
+      plannedRoute != null &&
+      plannedRoute!.points.length >= 2;
+
   @override
   void initState() {
     super.initState();
@@ -91,7 +99,7 @@ class _CreateActivityScreenState extends ConsumerState<CreateActivityScreen> {
 
   Future<void> _publish() async {
     if (publishing) return;
-    if (routeStart == null || routeDestination == null || routeWaypoints.any((p) => p == null) || plannedRoute == null) {
+    if (!_hasValidRoute) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ruten må være ferdig beregnet før aktiviteten kan publiseres.')));
       return;
     }
@@ -137,7 +145,7 @@ class _CreateActivityScreenState extends ConsumerState<CreateActivityScreen> {
   }
 
   void _next() {
-    if (step == 2 && (routeStart == null || routeDestination == null || routeWaypoints.any((p) => p == null) || plannedRoute == null || routeLoading)) {
+    if (step == 2 && !_hasValidRoute) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Velg start og mål, og vent til ruten er beregnet.')));
       return;
     }
@@ -163,7 +171,7 @@ class _CreateActivityScreenState extends ConsumerState<CreateActivityScreen> {
               if (step > 0) const SizedBox(width: 8),
               Expanded(
                 child: FilledButton(
-                  onPressed: publishing ? null : () => step == pages.length - 1 ? _publish() : _next(),
+                  onPressed: publishing || (step == pages.length - 1 && !_hasValidRoute) ? null : () => step == pages.length - 1 ? _publish() : _next(),
                   child: Text(publishing ? 'Lagrer…' : step == pages.length - 1 ? (startNow ? 'Start samling' : 'Publiser aktivitet') : 'Fortsett'),
                 ),
               ),
@@ -346,6 +354,7 @@ class _CreateActivityScreenState extends ConsumerState<CreateActivityScreen> {
             const SizedBox(height: 8),
             Text(startNow ? 'Starter nå · Samling' : 'Planlagt aktivitet'),
             Text('Rute: ${routeStart?.name ?? 'Ikke satt'} → ${routeDestination?.name ?? 'Ikke satt'}'),
+            if (!_hasValidRoute) Text('Ruten er ikke ferdig beregnet og kan ikke publiseres.', style: TextStyle(color: Theme.of(context).colorScheme.error)),
             if (routeWaypoints.whereType<PlaceSearchResult>().isNotEmpty) Text('Mellomstopp: ${routeWaypoints.whereType<PlaceSearchResult>().map((p) => p.name).join(' · ')}'),
             if (plannedRoute != null) Text('${plannedRoute!.distanceKm.toStringAsFixed(1)} km · ca. ${plannedRoute!.durationMinutes} min'),
             if (meetingPoint != null) Text('Oppmøte: ${meetingPoint!.name}'),
