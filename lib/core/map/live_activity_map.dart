@@ -1,0 +1,140 @@
+import 'package:flutter/material.dart';
+import 'package:maplibre_gl/maplibre_gl.dart';
+
+import '../../app/app_theme.dart';
+import '../../domain/models/activity_models.dart';
+
+class LiveActivityMap extends StatefulWidget {
+  final List<LiveParticipantPosition> positions;
+  final ActivityPublicState? publicState;
+  final Map<String, String> participantNames;
+  final String? currentUserId;
+
+  const LiveActivityMap({
+    super.key,
+    required this.positions,
+    required this.participantNames,
+    this.publicState,
+    this.currentUserId,
+  });
+
+  @override
+  State<LiveActivityMap> createState() => _LiveActivityMapState();
+}
+
+class _LiveActivityMapState extends State<LiveActivityMap> {
+  static const _mapStyle = 'https://tiles.openfreemap.org/styles/liberty';
+  static const _fallbackCenter = LatLng(58.9690, 5.7331);
+
+  MapLibreMapController? _controller;
+  bool _styleReady = false;
+
+  @override
+  void didUpdateWidget(covariant LiveActivityMap oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_styleReady && (oldWidget.positions != widget.positions || oldWidget.publicState != widget.publicState)) {
+      _render();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppTokens.radiusLg),
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: MapLibreMap(
+              key: const ValueKey('live-map-liberty'),
+              styleString: _mapStyle,
+              initialCameraPosition: CameraPosition(target: _center, zoom: 12.2),
+              compassEnabled: true,
+              rotateGesturesEnabled: true,
+              tiltGesturesEnabled: false,
+              logoEnabled: false,
+              attributionButtonPosition: AttributionButtonPosition.bottomLeft,
+              onMapCreated: (controller) => _controller = controller,
+              onStyleLoadedCallback: () {
+                _styleReady = true;
+                _render();
+              },
+            ),
+          ),
+          Positioned(
+            right: 12,
+            top: 12,
+            child: Material(
+              color: Theme.of(context).colorScheme.surface.withValues(alpha: .94),
+              borderRadius: BorderRadius.circular(12),
+              child: IconButton(
+                tooltip: 'Sentrer på gruppen',
+                icon: const Icon(Icons.center_focus_strong),
+                onPressed: _fit,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  LatLng get _center {
+    final fresh = widget.positions.where((p) => p.sharing && !p.isStale).toList();
+    if (fresh.isNotEmpty) {
+      final lat = fresh.fold<double>(0, (sum, p) => sum + p.latitude) / fresh.length;
+      final lon = fresh.fold<double>(0, (sum, p) => sum + p.longitude) / fresh.length;
+      return LatLng(lat, lon);
+    }
+    final publicState = widget.publicState;
+    if (publicState != null) return LatLng(publicState.latitude, publicState.longitude);
+    return _fallbackCenter;
+  }
+
+  Future<void> _render() async {
+    final controller = _controller;
+    if (controller == null || !_styleReady) return;
+    await controller.clearSymbols();
+
+    final publicState = widget.publicState;
+    if (publicState != null && !publicState.isStale) {
+      await controller.addSymbol(SymbolOptions(
+        geometry: LatLng(publicState.latitude, publicState.longitude),
+        textField: 'Gruppe · ${publicState.participantCount}',
+        textSize: 13,
+        textColor: '#17202A',
+        textHaloColor: '#FFFFFF',
+        textHaloWidth: 3,
+        textAnchor: 'bottom',
+        textOffset: const Offset(0, -1.2),
+        zIndex: 4,
+      ));
+    }
+
+    for (final position in widget.positions.where((p) => p.sharing)) {
+      final mine = position.userId == widget.currentUserId;
+      final name = widget.participantNames[position.userId] ?? 'Deltaker';
+      final role = switch (position.role) {
+        ParticipantRole.leader => 'Leder',
+        ParticipantRole.sweep => 'Baktropp',
+        ParticipantRole.participant => name,
+      };
+      final freshness = position.isStale ? ' · gammel' : '';
+      await controller.addSymbol(SymbolOptions(
+        geometry: LatLng(position.latitude, position.longitude),
+        textField: '${mine ? 'Du' : role}$freshness',
+        textSize: mine ? 15 : 13,
+        textColor: position.isStale ? '#6B7280' : (mine ? '#0B5C3B' : '#17202A'),
+        textHaloColor: '#FFFFFF',
+        textHaloWidth: 3,
+        textAnchor: 'center',
+        zIndex: mine ? 12 : position.role == ParticipantRole.leader ? 10 : 8,
+      ));
+    }
+  }
+
+  Future<void> _fit() async {
+    final controller = _controller;
+    if (controller == null) return;
+    await controller.animateCamera(CameraUpdate.newCameraPosition(CameraPosition(target: _center, zoom: 12.2)));
+  }
+}
