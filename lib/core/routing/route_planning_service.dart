@@ -112,7 +112,9 @@ class RoutePlanningService {
   PlannedRoute _manualRoute(List<PlaceSearchResult> locations, ActivityKind kind) {
     final points = [for (final p in locations) RouteCoordinate(latitude: p.latitude, longitude: p.longitude)];
     var distance = 0.0;
-    for (var i = 1; i < points.length; i++) distance += _haversineKm(points[i - 1], points[i]);
+    for (var i = 1; i < points.length; i++) {
+      distance += _haversineKm(points[i - 1], points[i]);
+    }
     final speed = kind == ActivityKind.kayak ? 5.0 : 8.0;
     return PlannedRoute(
       points: points,

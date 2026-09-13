@@ -1,5 +1,5 @@
 name: activity_network
-version: 0.3.0+32
+version: 0.3.1+33
 publish_to: 'none'
 description: WayCrew - live activity network for group activities, routes, chat and live tracking.
 environment:

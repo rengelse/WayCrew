@@ -1,3 +1,9 @@
+# v0.3.1 – Route Planning Analyzer Fix
+
+- Fixed `curly_braces_in_flow_control_structures` in route planning service.
+- Updated mock repository tests to provide the required `routePlan` argument.
+- No Supabase changes.
+
 # WayCrew v0.3.0 – Route Planning
 
 ## Nytt

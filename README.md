@@ -33,4 +33,4 @@ WayCrew checks GitHub Releases for new versions at startup and from Settings →
 
 
 ## Route Planning
-WayCrew v0.3.0 lagrer og viser planlagt rutegeometri med start, mellomstopp og mål. Landbaserte ruter beregnes med Valhalla/OpenStreetMap.
+WayCrew v0.3.1 lagrer og viser planlagt rutegeometri med start, mellomstopp og mål. Landbaserte ruter beregnes med Valhalla/OpenStreetMap.

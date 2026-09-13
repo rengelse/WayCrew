@@ -23,7 +23,7 @@ void main() {
   test('create activity adds local gathering activity', () {
     final store = MockActivityStore();
     final before = store.state.length;
-    final created = store.create(title: 'Testtur', kind: ActivityKind.motorcycle, startNow: true, participationMode: ParticipationMode.request, meetingPoint: 'Forus', routeStartName: 'Forus', routeDestinationName: 'Bryne', description: 'Test');
+    final created = store.create(title: 'Testtur', kind: ActivityKind.motorcycle, startNow: true, participationMode: ParticipationMode.request, meetingPoint: 'Forus', routeStartName: 'Forus', routeDestinationName: 'Bryne', routePlan: const ActivityRoutePlan(), description: 'Test');
     expect(store.state.length, before + 1);
     expect(created.status, ActivityStatus.gathering);
     expect(created.participants.single.role, ParticipantRole.leader);
@@ -139,6 +139,7 @@ void main() {
       meetingPoint: 'Forus',
       routeStartName: 'Forus',
       routeDestinationName: 'Sandnes',
+      routePlan: const ActivityRoutePlan(),
       description: 'Test',
       groupId: 'g1',
     );
