@@ -64,3 +64,8 @@ og legger APK-en automatisk på GitHub Releases.
 ## Android installasjonsadvarsel
 
 APK-en blir korrekt release-signert med fast nøkkel. Ved direkte sideloading fra GitHub kan Android fortsatt vise sikkerhetsvarsel om installasjon fra ukjent kilde. Det kan ikke fjernes av appkode. Distribusjon gjennom Google Play er veien til vanlig Play Store-installasjon uten denne sideload-flyten.
+
+
+## v0.2.16 CI note
+
+The workflow removes Flutter's generated `test/widget_test.dart` after `flutter create`, because that template references `MyApp` and is not part of WayCrew. Project tests under `test/` are preserved and still executed.

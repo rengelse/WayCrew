@@ -35,6 +35,9 @@ jobs:
       - name: Generate Android host
         run: flutter create --platforms=android --org com.example .
 
+      - name: Remove Flutter template test
+        run: rm -f test/widget_test.dart
+
       - name: Apply WayCrew Android configuration
         run: python3 tool/prepare_android_ci.py
 
