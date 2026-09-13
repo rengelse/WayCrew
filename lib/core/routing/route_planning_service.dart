@@ -72,7 +72,10 @@ List<RouteCoordinate> decodeValhallaPolyline6(String encoded) {
 }
 
 class RoutePlanningService {
-  static const _endpoint = 'https://valhalla.openstreetmap.de/route';
+  static const _endpoints = <String>[
+    'https://valhalla1.openstreetmap.de/route',
+    'https://valhalla.openstreetmap.de/route',
+  ];
 
   Future<PlannedRoute> plan({
     required ActivityKind kind,
@@ -92,30 +95,17 @@ class RoutePlanningService {
       'locations': [for (final p in locations) {'lat': p.latitude, 'lon': p.longitude, 'type': 'break'}],
       'costing': costing,
       'units': 'kilometers',
-      'shape_format': 'geojson',
+      'shape_format': 'polyline6',
       'directions_type': 'none',
     };
 
-    http.Response response;
-    try {
-      response = await http
-          .post(
-            Uri.parse(_endpoint),
-            headers: const {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-              'User-Agent': 'WayCrew/0.3.0',
-              'X-Client-Id': 'waycrew.app',
-            },
-            body: jsonEncode(payload),
-          )
-          .timeout(const Duration(seconds: 18));
-    } catch (_) {
-      throw const RoutePlanningException('Ruteberegning er ikke tilgjengelig akkurat nå. Prøv igjen.');
-    }
+    final response = await _requestRoute(payload);
 
     if (response.statusCode != 200) {
-      throw RoutePlanningException('Kunne ikke beregne rute (${response.statusCode}).');
+      final detail = _errorDetail(response.body);
+      throw RoutePlanningException(
+        'Kunne ikke beregne rute (${response.statusCode})${detail.isEmpty ? '' : ': $detail'}.',
+      );
     }
 
     final body = jsonDecode(response.body);
@@ -136,6 +126,72 @@ class RoutePlanningService {
       profile: costing,
       provider: 'Valhalla / OpenStreetMap',
     );
+  }
+
+  Future<http.Response> _requestRoute(Map<String, dynamic> payload) async {
+    Object? lastError;
+    http.Response? lastResponse;
+    final encodedPayload = jsonEncode(payload);
+
+    for (final endpoint in _endpoints) {
+      try {
+        final postResponse = await http
+            .post(
+              Uri.parse(endpoint),
+              headers: const {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'User-Agent': 'WayCrew/0.3.6',
+                'X-Client-Id': 'waycrew.app',
+              },
+              body: encodedPayload,
+            )
+            .timeout(const Duration(seconds: 18));
+
+        if (postResponse.statusCode == 200) return postResponse;
+        lastResponse = postResponse;
+
+        // Some public Valhalla demo frontends reject POST with HTTP 405,
+        // while supporting the documented GET form using the `json` query.
+        if (postResponse.statusCode == 405) {
+          final getUri = Uri.parse(endpoint).replace(queryParameters: {'json': encodedPayload});
+          final getResponse = await http
+              .get(
+                getUri,
+                headers: const {
+                  'Accept': 'application/json',
+                  'User-Agent': 'WayCrew/0.3.6',
+                  'X-Client-Id': 'waycrew.app',
+                },
+              )
+              .timeout(const Duration(seconds: 18));
+          if (getResponse.statusCode == 200) return getResponse;
+          lastResponse = getResponse;
+        }
+      } catch (error) {
+        lastError = error;
+      }
+    }
+
+    if (lastResponse != null) return lastResponse;
+    throw RoutePlanningException(
+      'Ruteberegning er ikke tilgjengelig akkurat nå${lastError == null ? '' : ' (${lastError.runtimeType})'}.',
+    );
+  }
+
+  String _errorDetail(String body) {
+    if (body.trim().isEmpty) return '';
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is Map) {
+        final value = decoded['error'] ?? decoded['message'] ?? decoded['error_code'];
+        if (value != null) return value.toString();
+      }
+    } catch (_) {
+      // Fall back to a short plain-text response below.
+    }
+    final normalized = body.replaceAll(RegExp(r'\s+'), ' ').trim();
+    return normalized.length <= 140 ? normalized : '${normalized.substring(0, 140)}…';
   }
 
   String _costingFor(ActivityKind kind) => switch (kind) {

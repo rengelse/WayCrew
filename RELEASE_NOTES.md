@@ -1,3 +1,20 @@
+# Release notes
+
+## v0.3.6 – Routing Transport Fix
+
+- Robust Valhalla transport: POST first, automatic GET `?json=` retry on HTTP 405.
+- Fallback between public Valhalla demo endpoints.
+- Keeps polyline6 route geometry decoding.
+- Routing failures now include useful HTTP/server diagnostics instead of a generic message.
+- No Supabase migration in this release.
+
+# WayCrew v0.3.5 – Routing API Host Fix
+
+- Fixed Valhalla routing API host: requests now use `https://valhalla1.openstreetmap.de/route`.
+- Route responses explicitly request `polyline6`, matching the decoder already used by WayCrew.
+- Routing failures now include HTTP status and available API error detail.
+- No Supabase migration in this release.
+
 # WayCrew v0.3.4 – Route Geometry Decode Fix
 
 - Fixed Valhalla route parsing: supports encoded polyline6 as well as GeoJSON shapes.
