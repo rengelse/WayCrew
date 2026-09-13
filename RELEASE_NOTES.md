@@ -1,5 +1,12 @@
 # WayCrew Release Notes
 
+## v0.2.19 – Dependency Resolution Fix
+
+- Updated `package_info_plus` to `^10.2.1` to match the dependency requirement from `geolocator ^14.0.3`.
+- Fixes GitHub Actions failure during `flutter create` / dependency resolution.
+- Retains Java 21, signed release APK builds, GitHub Releases publishing and in-app update checks from v0.2.18.
+- No Supabase migration in this release.
+
 ## v0.2.18 – Release Build & GitHub Update Check
 
 - GitHub Actions builds a signed release APK on both `main` pushes and `v*` tags.
