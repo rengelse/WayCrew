@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import '../../core/design_system/app_widgets.dart';
 import '../../core/map/activity_map.dart';
 import '../../core/map/meeting_point_map.dart';
@@ -80,7 +81,7 @@ class ActivityDetailScreen extends ConsumerWidget {
               ),
             ),
             Padding(padding: const EdgeInsets.all(16), child: Row(children: [Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(a.title, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)), Text(a.routeLabel)])), StatusBadge(a.status.label)])),
-            _section(context, 'Nøkkelinformasjon', Card(child: Padding(padding: const EdgeInsets.all(14), child: Wrap(spacing: 18, runSpacing: 12, children: [Text('📍 ${a.meetingPoint}'), Text('👥 ${a.participants.length}/${a.maxParticipants}'), if (a.routePlan.distanceKm > 0) Text('🧭 ${a.routePlan.distanceKm.toStringAsFixed(1)} km'), if (a.routePlan.durationMinutes > 0) Text('⏱️ ca. ${a.routePlan.durationMinutes} min'), Text('⚡ ${a.pace}'), Text('🛣️ ${a.surface}')])))),
+            _section(context, 'Nøkkelinformasjon', Card(child: Padding(padding: const EdgeInsets.all(14), child: Wrap(spacing: 18, runSpacing: 12, children: [Text('📅 ${DateFormat('dd.MM.yyyy HH:mm').format(a.startsAt)}'), Text('📍 ${a.meetingPoint}'), Text('👥 ${a.participants.length}/${a.maxParticipants}'), if (a.routePlan.distanceKm > 0) Text('🧭 ${a.routePlan.distanceKm.toStringAsFixed(1)} km'), if (a.routePlan.durationMinutes > 0) Text('⏱️ ca. ${a.routePlan.durationMinutes} min'), Text('⚡ ${a.pace}'), Text('🛣️ ${a.surface}')])))),
             if (a.routeStops.isNotEmpty)
               _section(context, 'Planlagt rute', Card(child: Column(children: [
                 for (final stop in a.routeStops.where((s) => s.type != 'meeting'))

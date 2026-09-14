@@ -146,7 +146,20 @@ class LiveTrackingController extends StateNotifier<LiveTrackingState> {
       );
       state = state.copyWith(lastPublishedAt: DateTime.now(), clearError: true);
     } catch (error) {
-      state = state.copyWith(error: 'Kunne ikke sende liveposisjon: $error');
+      final text = error.toString();
+      if (text.contains('activity_not_live') ||
+          text.contains('participant_required') ||
+          text.contains('authentication_required')) {
+        await stop(notifyServer: false);
+        state = state.copyWith(
+          tracking: false,
+          error: text.contains('participant_required')
+              ? 'Live-sporing er stoppet fordi du ikke lenger deltar på aktiviteten.'
+              : 'Live-sporing er stoppet fordi aktiviteten ikke lenger er aktiv.',
+        );
+      } else {
+        state = state.copyWith(error: 'Kunne ikke sende liveposisjon: $error');
+      }
     } finally {
       _publishing = false;
     }

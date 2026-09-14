@@ -6,6 +6,7 @@ import '../data/mock/mock_settings_store.dart';
 import '../data/mock/providers.dart';
 import '../features/auth/auth_controller.dart';
 import '../features/auth/auth_screen.dart';
+import '../features/live_activity/live_tracking_gate.dart';
 import 'app_router.dart';
 import 'app_theme.dart';
 
@@ -27,7 +28,7 @@ class ActivityNetworkApp extends ConsumerWidget {
       loading: () => MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'WayCrew',
-        builder: (context, child) => AppUpdateGate(child: child ?? const SizedBox.shrink()),
+        builder: (context, child) => AppUpdateGate(child: LiveTrackingGate(child: child ?? const SizedBox.shrink())),
         theme: AppTheme.light,
         darkTheme: AppTheme.dark,
         themeMode: themeMode,
@@ -36,7 +37,7 @@ class ActivityNetworkApp extends ConsumerWidget {
       error: (error, _) => MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'WayCrew',
-        builder: (context, child) => AppUpdateGate(child: child ?? const SizedBox.shrink()),
+        builder: (context, child) => AppUpdateGate(child: LiveTrackingGate(child: child ?? const SizedBox.shrink())),
         theme: AppTheme.light,
         darkTheme: AppTheme.dark,
         themeMode: themeMode,
@@ -47,7 +48,7 @@ class ActivityNetworkApp extends ConsumerWidget {
           return MaterialApp(
             debugShowCheckedModeBanner: false,
             title: 'WayCrew',
-            builder: (context, child) => AppUpdateGate(child: child ?? const SizedBox.shrink()),
+            builder: (context, child) => AppUpdateGate(child: LiveTrackingGate(child: child ?? const SizedBox.shrink())),
             theme: AppTheme.light,
             darkTheme: AppTheme.dark,
             themeMode: themeMode,
@@ -58,7 +59,7 @@ class ActivityNetworkApp extends ConsumerWidget {
         return MaterialApp.router(
           debugShowCheckedModeBanner: false,
           title: 'WayCrew',
-          builder: (context, child) => AppUpdateGate(child: child ?? const SizedBox.shrink()),
+          builder: (context, child) => AppUpdateGate(child: LiveTrackingGate(child: child ?? const SizedBox.shrink())),
           theme: AppTheme.light,
           darkTheme: AppTheme.dark,
           themeMode: themeMode,

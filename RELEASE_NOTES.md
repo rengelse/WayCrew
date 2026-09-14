@@ -1,5 +1,17 @@
 # Release notes
 
+## v0.3.8 – Scheduling, Background Tracking & Notification Refresh
+
+- Adds explicit activity start date and start time when planning an activity.
+- Start timestamp is shown in activity cards, detail view and publish review.
+- App-level live tracking gate starts/maintains foreground tracking for approved participants in active/paused activities, independent of the live-map screen.
+- Server-side participant lifecycle trigger immediately disables sharing when a participant leaves, is removed, rejected or withdrawn.
+- Server remains the source of truth: live positions are accepted only for approved/active participants while the activity is active/paused.
+- Live tracking stops locally when the server reports that the activity ended or participation is no longer valid.
+- Notification Realtime subscriptions now rebuild on Supabase JWT rotation and retry after an expired token.
+- Notification error state includes a retry action.
+- Adds migration `20260914150000_schedule_tracking_notifications.sql`.
+
 ## v0.3.7 – Live Map UX & Safety
 
 - Moves the live-map group-centering control below the top action row so it no longer overlaps `Vis gruppen`.

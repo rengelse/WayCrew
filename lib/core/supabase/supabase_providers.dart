@@ -15,5 +15,5 @@ final authSessionProvider = StreamProvider<Session?>((ref) async* {
 });
 
 final currentSupabaseUserProvider = Provider<User?>((ref) {
-  return ref.watch(supabaseClientProvider).auth.currentUser;
+  return ref.watch(authSessionProvider).valueOrNull?.user;
 });

@@ -88,20 +88,45 @@ final chatRepositoryProvider = Provider<ChatRepository>((ref) {
 
 final notificationRepositoryProvider = Provider<NotificationRepository?>((ref) {
   final demo = ref.watch(localDemoModeProvider);
-  final user = ref.watch(currentSupabaseUserProvider);
-  if (!demo && user != null) return SupabaseNotificationRepository(ref.watch(supabaseClientProvider));
+  final session = ref.watch(authSessionProvider).valueOrNull;
+  if (!demo && session?.user != null) {
+    return SupabaseNotificationRepository(ref.watch(supabaseClientProvider));
+  }
   return null;
 });
 
-final notificationsProvider = StreamProvider<List<AppNotification>>((ref) {
+final notificationsProvider = StreamProvider<List<AppNotification>>((ref) async* {
   final demo = ref.watch(localDemoModeProvider);
   if (demo) {
     final items = ref.watch(mockNotificationStoreProvider);
-    return Stream.value(items);
+    yield items;
+    return;
   }
+
+  // Rebuild the Realtime subscription whenever Supabase rotates the JWT.
+  // This prevents a channel from continuing with the token it had before the
+  // app was backgrounded for a long period.
+  ref.watch(authSessionProvider);
   final repository = ref.watch(notificationRepositoryProvider);
-  if (repository == null) return Stream.value(const <AppNotification>[]);
-  return repository.watchMine();
+  if (repository == null) {
+    yield const <AppNotification>[];
+    return;
+  }
+
+  try {
+    yield* repository.watchMine();
+  } catch (error) {
+    final text = error.toString();
+    if (!text.contains('InvalidJWTToken') && !text.toLowerCase().contains('token has expired')) {
+      rethrow;
+    }
+    final client = ref.read(supabaseClientProvider);
+    final refreshed = await client.auth.refreshSession();
+    final accessToken = refreshed.session?.accessToken;
+    if (accessToken == null) rethrow;
+    await client.realtime.setAuth(accessToken);
+    yield* repository.watchMine();
+  }
 });
 
 final historyRepositoryProvider = Provider<HistoryRepository?>((ref) {

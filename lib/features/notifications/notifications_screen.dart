@@ -30,7 +30,24 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
         top: false,
         child: asyncItems.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Kunne ikke laste varsler: $e')),
+        error: (e, _) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              const Icon(Icons.sync_problem_outlined, size: 42),
+              const SizedBox(height: 12),
+              const Text('Kunne ikke laste varsler.'),
+              const SizedBox(height: 6),
+              Text('$e', textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodySmall),
+              const SizedBox(height: 14),
+              FilledButton.icon(
+                onPressed: () => ref.invalidate(notificationsProvider),
+                icon: const Icon(Icons.refresh),
+                label: const Text('Prøv igjen'),
+              ),
+            ]),
+          ),
+        ),
         data: (items) {
           final visible = items.where((item) => filter == null || item.category == filter).toList()
             ..sort((a, b) => b.createdAt.compareTo(a.createdAt));

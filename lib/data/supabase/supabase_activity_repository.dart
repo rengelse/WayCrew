@@ -33,9 +33,8 @@ class SupabaseActivityRepository implements ActivityRepository {
   }
 
   @override
-  Future<Activity> create({required String title, required ActivityKind kind, required bool startNow, required ParticipationMode participationMode, String? meetingPoint, String? meetingAddress, double? meetingLatitude, double? meetingLongitude, required String routeStartName, required String routeStartAddress, required double routeStartLatitude, required double routeStartLongitude, required String routeDestinationName, required String routeDestinationAddress, required double routeDestinationLatitude, required double routeDestinationLongitude, required ActivityRoutePlan routePlan, List<ActivityRouteStop> routeStops = const [], String? description, String? groupId}) async {
+  Future<Activity> create({required String title, required ActivityKind kind, required bool startNow, required DateTime startsAt, required ParticipationMode participationMode, String? meetingPoint, String? meetingAddress, double? meetingLatitude, double? meetingLongitude, required String routeStartName, required String routeStartAddress, required double routeStartLatitude, required double routeStartLongitude, required String routeDestinationName, required String routeDestinationAddress, required double routeDestinationLatitude, required double routeDestinationLongitude, required ActivityRoutePlan routePlan, List<ActivityRouteStop> routeStops = const [], String? description, String? groupId}) async {
     final cleanMeeting = (meetingPoint ?? '').trim();
-    final startsAt = startNow ? DateTime.now() : DateTime.now().add(const Duration(days: 1));
     final result = await _client.rpc('create_activity', params: {
       'p_activity_type': kind.name,
       'p_title': title.trim().isEmpty ? '${kind.label}-aktivitet' : title.trim(),

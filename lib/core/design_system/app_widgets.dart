@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import '../../app/app_theme.dart';
 import '../../domain/models/activity_models.dart';
 
@@ -90,6 +91,12 @@ class ActivityCard extends StatelessWidget {
             ]),
             const SizedBox(height: 10),
             Text(activity.routeLabel),
+            const SizedBox(height: 6),
+            Row(children: [
+              const Icon(Icons.schedule_outlined, size: 16),
+              const SizedBox(width: 6),
+              Text(DateFormat('dd.MM.yyyy HH:mm').format(activity.startsAt), style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w700)),
+            ]),
             const SizedBox(height: 6),
             Text('${activity.confirmedParticipants}/${activity.maxParticipants} deltakere · ${activity.distanceKm.toStringAsFixed(0)} km unna', style: Theme.of(context).textTheme.bodySmall),
             const SizedBox(height: 10),

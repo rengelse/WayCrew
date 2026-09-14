@@ -3,7 +3,7 @@ import '../models/activity_models.dart';
 abstract interface class ActivityRepository {
   Future<List<Activity>> discover();
   Future<Activity?> byId(String id);
-  Future<Activity> create({required String title, required ActivityKind kind, required bool startNow, required ParticipationMode participationMode, String? meetingPoint, String? meetingAddress, double? meetingLatitude, double? meetingLongitude, required String routeStartName, required String routeStartAddress, required double routeStartLatitude, required double routeStartLongitude, required String routeDestinationName, required String routeDestinationAddress, required double routeDestinationLatitude, required double routeDestinationLongitude, required ActivityRoutePlan routePlan, List<ActivityRouteStop> routeStops = const [], String? description, String? groupId});
+  Future<Activity> create({required String title, required ActivityKind kind, required bool startNow, required DateTime startsAt, required ParticipationMode participationMode, String? meetingPoint, String? meetingAddress, double? meetingLatitude, double? meetingLongitude, required String routeStartName, required String routeStartAddress, required double routeStartLatitude, required double routeStartLongitude, required String routeDestinationName, required String routeDestinationAddress, required double routeDestinationLatitude, required double routeDestinationLongitude, required ActivityRoutePlan routePlan, List<ActivityRouteStop> routeStops = const [], String? description, String? groupId});
   Future<void> requestToJoin(String activityId);
   Future<void> joinOpen(String activityId);
   Future<void> approveParticipant(String activityId, String userId);

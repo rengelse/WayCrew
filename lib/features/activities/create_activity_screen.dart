@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import '../../core/design_system/app_widgets.dart';
 import '../../core/geocoding/place_search_field.dart';
@@ -22,6 +23,7 @@ class _CreateActivityScreenState extends ConsumerState<CreateActivityScreen> {
   int step = 0;
   ActivityKind kind = ActivityKind.motorcycle;
   bool startNow = true;
+  late DateTime plannedStart;
   ParticipationMode mode = ParticipationMode.request;
   String? groupId;
   final title = TextEditingController();
@@ -48,6 +50,8 @@ class _CreateActivityScreenState extends ConsumerState<CreateActivityScreen> {
   void initState() {
     super.initState();
     groupId = widget.initialGroupId;
+    final tomorrow = DateTime.now().add(const Duration(days: 1));
+    plannedStart = DateTime(tomorrow.year, tomorrow.month, tomorrow.day, 10);
   }
 
   @override
@@ -108,6 +112,7 @@ class _CreateActivityScreenState extends ConsumerState<CreateActivityScreen> {
         title: title.text,
         kind: kind,
         startNow: startNow,
+        startsAt: startNow ? DateTime.now() : plannedStart,
         participationMode: mode,
         meetingPoint: meetingPoint?.name,
         meetingAddress: meetingPoint?.address,
@@ -144,6 +149,10 @@ class _CreateActivityScreenState extends ConsumerState<CreateActivityScreen> {
   }
 
   void _next() {
+    if (step == 1 && !startNow && !plannedStart.isAfter(DateTime.now())) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Velg en startdato og starttid som er frem i tid.')));
+      return;
+    }
     if (step == 2 && !_hasValidRoute) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Velg start og mål, og vent til ruten er beregnet.')));
       return;
@@ -193,16 +202,70 @@ class _CreateActivityScreenState extends ConsumerState<CreateActivityScreen> {
 
   Widget _timingStep() => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text('Når skal aktiviteten skje?', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800)),
+        const SizedBox(height: 8),
+        Text('Dato og klokkeslett vises til alle som vurderer eller deltar på aktiviteten.', style: Theme.of(context).textTheme.bodyMedium),
         const SizedBox(height: 16),
         RadioGroup<bool>(
           groupValue: startNow,
           onChanged: (v) { if (v != null) setState(() => startNow = v); },
           child: const Column(children: [
-            RadioListTile<bool>(value: true, title: Text('Start nå'), subtitle: Text('Aktiviteten går til Samling')),
-            RadioListTile<bool>(value: false, title: Text('Planlegg'), subtitle: Text('Aktiviteten planlegges til i morgen')),
+            RadioListTile<bool>(value: true, title: Text('Start nå'), subtitle: Text('Aktiviteten går direkte til Samling')),
+            RadioListTile<bool>(value: false, title: Text('Planlegg dato og tid'), subtitle: Text('Velg når aktiviteten skal starte')),
           ]),
         ),
+        if (!startNow) ...[
+          const SizedBox(height: 12),
+          Card(
+            child: Column(children: [
+              ListTile(
+                leading: const Icon(Icons.calendar_month_outlined),
+                title: const Text('Startdato'),
+                subtitle: Text(DateFormat('dd.MM.yyyy').format(plannedStart)),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: _pickStartDate,
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.schedule_outlined),
+                title: const Text('Starttid'),
+                subtitle: Text(DateFormat('HH:mm').format(plannedStart)),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: _pickStartTime,
+              ),
+            ]),
+          ),
+          if (plannedStart.isBefore(DateTime.now()))
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text('Starttidspunktet må være frem i tid.', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            ),
+        ],
       ]);
+
+  Future<void> _pickStartDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: plannedStart.isBefore(now) ? now : plannedStart,
+      firstDate: DateTime(now.year, now.month, now.day),
+      lastDate: now.add(const Duration(days: 730)),
+    );
+    if (picked == null || !mounted) return;
+    setState(() {
+      plannedStart = DateTime(picked.year, picked.month, picked.day, plannedStart.hour, plannedStart.minute);
+    });
+  }
+
+  Future<void> _pickStartTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(plannedStart),
+    );
+    if (picked == null || !mounted) return;
+    setState(() {
+      plannedStart = DateTime(plannedStart.year, plannedStart.month, plannedStart.day, picked.hour, picked.minute);
+    });
+  }
 
   Widget _detailsStep() => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text('Tur og detaljer', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800)),
@@ -351,7 +414,7 @@ class _CreateActivityScreenState extends ConsumerState<CreateActivityScreen> {
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('${kind.emoji} ${title.text}', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
             const SizedBox(height: 8),
-            Text(startNow ? 'Starter nå · Samling' : 'Planlagt aktivitet'),
+            Text(startNow ? 'Starter nå · Samling' : 'Starter ${DateFormat('dd.MM.yyyy HH:mm').format(plannedStart)}'),
             Text('Rute: ${routeStart?.name ?? 'Ikke satt'} → ${routeDestination?.name ?? 'Ikke satt'}'),
             if (!_hasValidRoute) Text('Ruten er ikke ferdig beregnet og kan ikke publiseres.', style: TextStyle(color: Theme.of(context).colorScheme.error)),
             if (routeWaypoints.whereType<PlaceSearchResult>().isNotEmpty) Text('Mellomstopp: ${routeWaypoints.whereType<PlaceSearchResult>().map((p) => p.name).join(' · ')}'),

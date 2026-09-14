@@ -1,6 +1,6 @@
-# WayCrew v0.3.7
+# WayCrew v0.3.8
 
-Gjeldende versjon: **0.3.7+39**. WayCrew kan nå laste ned en ny signert APK direkte i appen, vise nedlastingsfremdrift og åpne Android-installasjonen automatisk når filen er klar.
+Gjeldende versjon: **0.3.8+40**. WayCrew kan nå laste ned en ny signert APK direkte i appen, vise nedlastingsfremdrift og åpne Android-installasjonen automatisk når filen er klar.
 
 # WayCrew
 
@@ -39,6 +39,6 @@ WayCrew v0.3.1 lagrer og viser planlagt rutegeometri med start, mellomstopp og m
 ## In-app updates
 Fra v0.3.7 laster WayCrew APK-en direkte fra siste GitHub Release. Android viser fortsatt den vanlige systemdialogen for å godkjenne installasjonen. Samme release-signering må brukes på alle APK-er.
 
-## v0.3.7 – Live Map UX & Safety
+## v0.3.8 – Scheduling, Background Tracking & Notification Refresh
 
-WayCrew now includes non-overlapping live-map controls, activity-specific participant markers with privacy-reduced names, blocked-user management, reporting and support/help flows. Run the new Supabase migration before testing safety features.
+Planlagte aktiviteter har eksplisitt startdato og starttid. Live-sporing er flyttet fra skjermnivå til en app-global gate og fortsetter med Android foreground location så lenge brukeren er godkjent deltaker på en aktiv/pauset aktivitet. Backend stopper deling umiddelbart når aktivitet eller deltakelse ikke lenger er gyldig. Varsler fornyer Realtime-abonnement ved JWT-rotasjon. Kjør migreringen `20260914150000_schedule_tracking_notifications.sql` før testing.
