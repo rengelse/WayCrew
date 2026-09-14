@@ -37,6 +37,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final activity = widget.isGroup ? null : ref.watch(activityByIdProvider(widget.entityId)).valueOrNull;
     final group = widget.isGroup ? ref.watch(groupByIdProvider(widget.entityId)).valueOrNull : null;
     final isLeader = activity?.participants.any((p) => p.user.id == currentUserId && p.role == ParticipantRole.leader) ?? false;
+    final isGroupModerator = group?.myRole == GroupRole.owner || group?.myRole == GroupRole.admin;
+    final canModerate = widget.isGroup ? isGroupModerator : isLeader;
     final resolvedTitle = widget.isGroup ? (group?.name ?? widget.title) : (activity?.title ?? widget.title);
 
     return Scaffold(
@@ -76,7 +78,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     itemCount: messages.length,
                     itemBuilder: (context, index) {
                       final message = messages[messages.length - 1 - index];
-                      return _MessageBubble(message: message, currentName: currentName, currentUserId: currentUserId);
+                      return _MessageBubble(
+                        message: message,
+                        currentName: currentName,
+                        currentUserId: currentUserId,
+                        canModerate: canModerate,
+                        onDelete: () => _deleteMessage(message),
+                      );
                     },
                   ),
           ),
@@ -145,6 +153,32 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     return ref.read(supabaseProfileControllerProvider).valueOrNull?.name ?? 'Meg';
   }
 
+  Future<void> _deleteMessage(ChatMessage message) async {
+    if (message.system || message.isDeleted) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Slett melding?'),
+        content: const Text('Meldingen fjernes fra chatten. Handlingen kan ikke angres.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Avbryt')),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Slett'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await ref.read(chatRepositoryProvider).deleteMessage(message.id);
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Kunne ikke slette meldingen: $error')));
+      }
+    }
+  }
+
   Future<void> _send() async {
     final text = controller.text.trim();
     if (text.isEmpty) return;
@@ -167,11 +201,20 @@ class _MessageBubble extends StatelessWidget {
   final ChatMessage message;
   final String currentName;
   final String? currentUserId;
-  const _MessageBubble({required this.message, required this.currentName, required this.currentUserId});
+  final bool canModerate;
+  final VoidCallback onDelete;
+  const _MessageBubble({
+    required this.message,
+    required this.currentName,
+    required this.currentUserId,
+    required this.canModerate,
+    required this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
     final mine = (currentUserId != null && message.senderId == currentUserId) || message.sender == currentName || message.sender == currentUser.name;
+    final canDelete = !message.system && !message.isDeleted && (mine || canModerate);
     return Align(
       alignment: message.system ? Alignment.center : mine ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
@@ -190,11 +233,42 @@ class _MessageBubble extends StatelessWidget {
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           if (!message.system)
-            Text(message.important ? 'Viktig · ${message.sender}' : message.sender, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
-          Text(message.text),
+            Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+              Expanded(
+                child: Text(
+                  message.important ? 'Viktig · ${message.sender}' : message.sender,
+                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
+                ),
+              ),
+              if (canDelete)
+                PopupMenuButton<String>(
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 160),
+                  icon: const Icon(Icons.more_horiz, size: 19),
+                  onSelected: (value) {
+                    if (value == 'delete') onDelete();
+                  },
+                  itemBuilder: (_) => const [
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: Row(children: [
+                        Icon(Icons.delete_outline),
+                        SizedBox(width: 10),
+                        Text('Slett melding'),
+                      ]),
+                    ),
+                  ],
+                ),
+            ]),
+          Text(
+            message.isDeleted ? 'Meldingen er slettet' : message.text,
+            style: message.isDeleted ? const TextStyle(fontStyle: FontStyle.italic) : null,
+          ),
           const SizedBox(height: 3),
           Text(
-            message.pending ? 'Venter på sending' : '${message.sentAt.hour.toString().padLeft(2, '0')}:${message.sentAt.minute.toString().padLeft(2, '0')}',
+            message.pending
+                ? 'Venter på sending'
+                : '${message.sentAt.hour.toString().padLeft(2, '0')}:${message.sentAt.minute.toString().padLeft(2, '0')}',
             style: Theme.of(context).textTheme.labelSmall,
           ),
         ]),

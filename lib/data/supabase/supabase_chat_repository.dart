@@ -81,6 +81,11 @@ class SupabaseChatRepository implements ChatRepository {
     });
   }
 
+  @override
+  Future<void> deleteMessage(String messageId) async {
+    await _client.rpc('delete_chat_message', params: {'p_message_id': messageId});
+  }
+
   Future<String> _activityChatId(String activityId) async {
     final row = await _client.from('chats').select('id').eq('activity_id', activityId).maybeSingle();
     if (row == null) {
@@ -122,14 +127,17 @@ class SupabaseChatRepository implements ChatRepository {
       final row = Map<String, dynamic>.from(raw);
       final senderId = row['sender_id'] as String?;
       final type = row['message_type'] as String? ?? 'text';
+      final deletedAt = DateTime.tryParse(row['deleted_at'] as String? ?? '')?.toLocal();
       return ChatMessage(
         id: row['id'] as String,
         senderId: senderId,
         sender: senderId == null ? 'System' : (profiles[senderId] ?? 'Deltaker'),
-        text: row['body'] as String? ?? '',
+        text: deletedAt == null ? (row['body'] as String? ?? '') : '',
         sentAt: DateTime.tryParse(row['created_at'] as String? ?? '')?.toLocal() ?? DateTime.now(),
         system: type == 'system',
         important: row['important'] as bool? ?? false,
+        deletedAt: deletedAt,
+        deletedById: row['deleted_by'] as String?,
       );
     }).toList();
   }

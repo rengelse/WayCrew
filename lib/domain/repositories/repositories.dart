@@ -41,6 +41,7 @@ abstract interface class ChatRepository {
   Stream<List<ChatMessage>> watchGroupMessages(String groupId);
   Future<void> sendActivityMessage(String activityId, String text, {bool important = false, String? senderName});
   Future<void> sendGroupMessage(String groupId, String text, {String? senderName});
+  Future<void> deleteMessage(String messageId);
 }
 
 abstract interface class NotificationRepository {

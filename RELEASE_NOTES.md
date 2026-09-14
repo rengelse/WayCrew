@@ -1,3 +1,16 @@
+# WayCrew v0.3.9 – Chat Message Management
+
+- Added soft-delete for chat messages with explicit confirmation.
+- Users can delete their own messages.
+- Activity leaders can moderate activity chat; group owners/admins can moderate group chat.
+- Deletion is enforced by the `delete_chat_message` Supabase RPC.
+- Original message content is copied to a locked `message_delete_audit` table before the visible message body is cleared.
+- Deleted messages remain in conversation order as «Meldingen er slettet».
+- System messages cannot be deleted.
+- New migration: `20260914193000_chat_message_management.sql`.
+
+---
+
 # Release notes
 
 ## v0.3.8 – Scheduling, Background Tracking & Notification Refresh

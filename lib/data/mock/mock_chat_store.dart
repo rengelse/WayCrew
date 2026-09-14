@@ -30,4 +30,38 @@ class MockChatStore extends StateNotifier<MockChatState> {
     next[id] = [...(next[id] ?? const []), ChatMessage(id: 'local-${DateTime.now().microsecondsSinceEpoch}', sender: senderName?.trim().isNotEmpty == true ? senderName!.trim() : currentUser.name, text: clean, sentAt: DateTime.now())];
     state = MockChatState(activity: state.activity, group: next);
   }
+  void deleteMessage(String messageId) {
+    ChatMessage deleted(ChatMessage message) => ChatMessage(
+      id: message.id,
+      senderId: message.senderId,
+      sender: message.sender,
+      text: '',
+      sentAt: message.sentAt,
+      system: message.system,
+      important: false,
+      pending: false,
+      deletedAt: DateTime.now(),
+      deletedById: currentUser.id,
+    );
+
+    var changed = false;
+    final nextActivity = <String, List<ChatMessage>>{};
+    for (final entry in state.activity.entries) {
+      nextActivity[entry.key] = entry.value.map((message) {
+        if (message.id != messageId || message.system || message.isDeleted) return message;
+        changed = true;
+        return deleted(message);
+      }).toList();
+    }
+    final nextGroup = <String, List<ChatMessage>>{};
+    for (final entry in state.group.entries) {
+      nextGroup[entry.key] = entry.value.map((message) {
+        if (message.id != messageId || message.system || message.isDeleted) return message;
+        changed = true;
+        return deleted(message);
+      }).toList();
+    }
+    if (changed) state = MockChatState(activity: nextActivity, group: nextGroup);
+  }
+
 }

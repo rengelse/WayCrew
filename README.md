@@ -1,6 +1,6 @@
-# WayCrew v0.3.8
+# WayCrew v0.3.9
 
-Gjeldende versjon: **0.3.8+40**. WayCrew kan nå laste ned en ny signert APK direkte i appen, vise nedlastingsfremdrift og åpne Android-installasjonen automatisk når filen er klar.
+Gjeldende versjon: **0.3.9+41**. WayCrew har nå serverstyrt sletting av chatmeldinger med moderatorrettigheter og låst audit-spor.
 
 # WayCrew
 
@@ -38,6 +38,16 @@ WayCrew v0.3.1 lagrer og viser planlagt rutegeometri med start, mellomstopp og m
 
 ## In-app updates
 Fra v0.3.7 laster WayCrew APK-en direkte fra siste GitHub Release. Android viser fortsatt den vanlige systemdialogen for å godkjenne installasjonen. Samme release-signering må brukes på alle APK-er.
+
+## v0.3.9 – Chat Message Management
+
+- Brukere kan slette egne chatmeldinger.
+- Turleder kan moderere aktivitetschat.
+- Gruppeeier og administrator kan moderere gruppechat.
+- Sletting krever bekreftelse og håndheves server-side.
+- Slettede meldinger vises som «Meldingen er slettet».
+- Original meldingsinnhold flyttes til en låst audit-tabell før innholdet fjernes fra den synlige meldingsraden.
+- Systemmeldinger kan ikke slettes.
 
 ## v0.3.8 – Scheduling, Background Tracking & Notification Refresh
 

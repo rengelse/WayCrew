@@ -342,7 +342,22 @@ class ChatMessage {
   final bool system;
   final bool important;
   final bool pending;
-  const ChatMessage({required this.id, this.senderId, required this.sender, required this.text, required this.sentAt, this.system = false, this.important = false, this.pending = false});
+  final DateTime? deletedAt;
+  final String? deletedById;
+  const ChatMessage({
+    required this.id,
+    this.senderId,
+    required this.sender,
+    required this.text,
+    required this.sentAt,
+    this.system = false,
+    this.important = false,
+    this.pending = false,
+    this.deletedAt,
+    this.deletedById,
+  });
+
+  bool get isDeleted => deletedAt != null;
 }
 
 class AppNotification {

@@ -70,4 +70,5 @@ class MockChatRepository implements ChatRepository {
   @override Stream<List<ChatMessage>> watchGroupMessages(String groupId) => Stream.value(store.groupMessages(groupId));
   @override Future<void> sendActivityMessage(String activityId, String text, {bool important = false, String? senderName}) async => store.sendActivity(activityId, text, important: important, senderName: senderName);
   @override Future<void> sendGroupMessage(String groupId, String text, {String? senderName}) async => store.sendGroup(groupId, text, senderName: senderName);
+  @override Future<void> deleteMessage(String messageId) async => store.deleteMessage(messageId);
 }

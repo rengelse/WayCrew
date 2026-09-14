@@ -209,5 +209,17 @@ void main() {
     expect(message.senderId, 'u1');
   });
 
+  test('chat message can be soft deleted in mock store', () {
+    final store = MockChatStore();
+    store.sendActivity('a1', 'Skal slettes', senderName: 'Nytt navn');
+    final id = store.activityMessages('a1').last.id;
+    store.deleteMessage(id);
+    final deleted = store.activityMessages('a1').last;
+    expect(deleted.id, id);
+    expect(deleted.isDeleted, isTrue);
+    expect(deleted.text, isEmpty);
+  });
+
+
 }
 
