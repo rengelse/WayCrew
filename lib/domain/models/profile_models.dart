@@ -34,3 +34,19 @@ class ProfileState {
     activityProfiles: activityProfiles ?? this.activityProfiles,
   );
 }
+class LiveParticipantProfileCard {
+  final String userId;
+  final String name;
+  final String region;
+  final String bio;
+  final String? avatarUrl;
+
+  const LiveParticipantProfileCard({
+    required this.userId,
+    required this.name,
+    required this.region,
+    required this.bio,
+    this.avatarUrl,
+  });
+}
+

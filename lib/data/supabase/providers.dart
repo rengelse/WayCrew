@@ -11,6 +11,14 @@ final supabaseProfileRepositoryProvider = Provider<SupabaseProfileRepository>((r
   return SupabaseProfileRepository(ref.watch(supabaseClientProvider));
 });
 
+final liveParticipantProfileCardProvider = FutureProvider.autoDispose.family<
+    LiveParticipantProfileCard, ({String activityId, String userId})>((ref, request) {
+  return ref.watch(supabaseProfileRepositoryProvider).liveParticipantCard(
+        activityId: request.activityId,
+        userId: request.userId,
+      );
+});
+
 class SupabaseProfileController extends StateNotifier<AsyncValue<ProfileState>> {
   final SupabaseProfileRepository _repository;
 

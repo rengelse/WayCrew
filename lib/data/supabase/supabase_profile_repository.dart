@@ -62,6 +62,39 @@ class SupabaseProfileRepository {
     );
   }
 
+  Future<LiveParticipantProfileCard> liveParticipantCard({
+    required String activityId,
+    required String userId,
+  }) async {
+    final rows = await _client.rpc(
+      'get_live_participant_profile',
+      params: {
+        'p_activity_id': activityId,
+        'p_user_id': userId,
+      },
+    );
+    if (rows is! List || rows.isEmpty) {
+      throw StateError('live_participant_profile_unavailable');
+    }
+    final row = Map<String, dynamic>.from(rows.first as Map);
+    final avatarPath = (row['avatar_path'] as String?)?.trim();
+    String? avatarSignedUrl;
+    if (avatarPath != null && avatarPath.isNotEmpty) {
+      try {
+        avatarSignedUrl = await _client.storage.from('avatars').createSignedUrl(avatarPath, 60 * 60);
+      } catch (_) {
+        avatarSignedUrl = null;
+      }
+    }
+    return LiveParticipantProfileCard(
+      userId: row['id'] as String? ?? userId,
+      name: (row['display_name'] as String?)?.trim() ?? '',
+      region: (row['region'] as String?)?.trim() ?? '',
+      bio: (row['bio'] as String?)?.trim() ?? '',
+      avatarUrl: avatarSignedUrl,
+    );
+  }
+
   Future<void> updateMine({required String displayName, required String region, required String bio}) async {
     final user = _user;
     await _client.from('profiles').update({

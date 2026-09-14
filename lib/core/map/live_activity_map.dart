@@ -11,6 +11,7 @@ class LiveActivityMap extends StatefulWidget {
   final String? currentUserId;
   final ActivityRoutePlan route;
   final ActivityKind activityKind;
+  final ValueChanged<String>? onParticipantTap;
 
   const LiveActivityMap({
     super.key,
@@ -20,6 +21,7 @@ class LiveActivityMap extends StatefulWidget {
     this.currentUserId,
     this.route = const ActivityRoutePlan(),
     this.activityKind = ActivityKind.other,
+    this.onParticipantTap,
   });
 
   @override
@@ -32,6 +34,7 @@ class _LiveActivityMapState extends State<LiveActivityMap> {
 
   MapLibreMapController? _controller;
   bool _styleReady = false;
+  final Map<String, String> _symbolParticipants = {};
 
   @override
   void didUpdateWidget(covariant LiveActivityMap oldWidget) {
@@ -57,7 +60,10 @@ class _LiveActivityMapState extends State<LiveActivityMap> {
               tiltGesturesEnabled: false,
               logoEnabled: false,
               attributionButtonPosition: AttributionButtonPosition.bottomLeft,
-              onMapCreated: (controller) => _controller = controller,
+              onMapCreated: (controller) {
+                _controller = controller;
+                controller.onSymbolTapped.add(_onSymbolTapped);
+              },
               onStyleLoadedCallback: () {
                 _styleReady = true;
                 _render();
@@ -99,6 +105,7 @@ class _LiveActivityMapState extends State<LiveActivityMap> {
     if (controller == null || !_styleReady) return;
     await controller.clearSymbols();
     await controller.clearLines();
+    _symbolParticipants.clear();
     if (widget.route.hasGeometry) {
       await controller.addLine(LineOptions(
         geometry: [for (final p in widget.route.points) LatLng(p.latitude, p.longitude)],
@@ -134,7 +141,7 @@ class _LiveActivityMapState extends State<LiveActivityMap> {
       };
       final freshness = position.isStale ? ' · gammel' : '';
       final displayName = mine ? 'Du' : '$rolePrefix$privateName';
-      await controller.addSymbol(SymbolOptions(
+      final symbol = await controller.addSymbol(SymbolOptions(
         geometry: LatLng(position.latitude, position.longitude),
         textField: '${_activityMarker(widget.activityKind)}\n$displayName$freshness',
         textSize: mine ? 15 : 13,
@@ -144,6 +151,7 @@ class _LiveActivityMapState extends State<LiveActivityMap> {
         textAnchor: 'center',
         zIndex: mine ? 12 : position.role == ParticipantRole.leader ? 10 : 8,
       ));
+      _symbolParticipants[symbol.id] = position.userId;
     }
   }
 
@@ -173,6 +181,17 @@ class _LiveActivityMapState extends State<LiveActivityMap> {
         ActivityKind.climbing => '🧗',
         ActivityKind.other => '📍',
       };
+
+  void _onSymbolTapped(Symbol symbol) {
+    final userId = _symbolParticipants[symbol.id];
+    if (userId != null) widget.onParticipantTap?.call(userId);
+  }
+
+  @override
+  void dispose() {
+    _controller?.onSymbolTapped.remove(_onSymbolTapped);
+    super.dispose();
+  }
 
   Future<void> _fit() async {
     final controller = _controller;

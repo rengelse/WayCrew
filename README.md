@@ -1,7 +1,7 @@
 # WayCrew
 
 ## Gjeldende versjon
-`0.4.3+45`
+`0.4.4+46`
 
 WayCrew er en Flutter-app for live gruppeaktiviteter, ruteplanlegging, grupper, chat, varsler og live tracking.
 

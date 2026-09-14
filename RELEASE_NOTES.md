@@ -1,3 +1,12 @@
+# WayCrew v0.4.4 – Live Participant Profile Cards
+
+- Live map participant markers are now tappable.
+- Tapping a live participant opens a compact profile card with profile image, privacy-reduced first name, area, short bio, trip role and live-position freshness.
+- Profile cards use only the existing basic profile fields; no new public profile surface is introduced.
+- Server-side access requires both viewer and target to be approved/active participants in the same active or paused activity.
+- Avatar bucket remains private; signed avatar access is permitted only in the same live-participant context.
+- Adds Supabase migration `20260914204500_live_participant_profile_cards.sql`.
+
 # v0.4.3 – Navigation Integrity Test Fix
 
 - Fixed the navigation integrity test that referenced an undefined Dart identifier inside a string assertion.

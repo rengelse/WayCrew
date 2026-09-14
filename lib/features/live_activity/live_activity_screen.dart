@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/design_system/app_widgets.dart';
 import '../../core/map/live_activity_map.dart';
 import '../../data/providers.dart';
+import '../../data/supabase/providers.dart';
 import '../../domain/models/activity_models.dart';
 import 'live_tracking_controller.dart';
 import '../../core/errors_user_facing.dart';
@@ -76,6 +77,12 @@ class LiveActivityScreen extends ConsumerWidget {
                     participantNames: {for (final participant in visibleParticipants) participant.user.id: participant.user.name},
                     route: a.routePlan,
                     activityKind: a.kind,
+                    onParticipantTap: (userId) {
+                      final participant = visibleParticipants.where((p) => p.user.id == userId).firstOrNull;
+                      if (participant != null) {
+                        _participantProfile(context, a, participant, visibleLivePositions);
+                      }
+                    },
                   ),
                 ),
               ),
@@ -179,6 +186,105 @@ class LiveActivityScreen extends ConsumerWidget {
   }
 
 
+  void _participantProfile(
+    BuildContext context,
+    Activity activity,
+    ActivityParticipant participant,
+    List<LiveParticipantPosition> livePositions,
+  ) {
+    final request = (activityId: activity.id, userId: participant.user.id);
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (sheetContext) => SafeArea(
+        child: Consumer(
+          builder: (context, sheetRef, _) {
+            final profileAsync = sheetRef.watch(liveParticipantProfileCardProvider(request));
+            final position = _positionFor(participant, livePositions);
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+              child: profileAsync.when(
+                loading: () => const SizedBox(height: 180, child: Center(child: CircularProgressIndicator())),
+                error: (error, _) => SizedBox(
+                  height: 180,
+                  child: Center(
+                    child: Column(mainAxisSize: MainAxisSize.min, children: [
+                      const Icon(Icons.person_off_outlined, size: 34),
+                      const SizedBox(height: 10),
+                      const Text('Kunne ikke laste deltakerprofilen.'),
+                      const SizedBox(height: 10),
+                      TextButton.icon(
+                        onPressed: () => sheetRef.invalidate(liveParticipantProfileCardProvider(request)),
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Prøv igjen'),
+                      ),
+                    ]),
+                  ),
+                ),
+                data: (profile) {
+                  final displayName = _privateParticipantName(profile.name.isEmpty ? participant.user.name : profile.name, activity.participants);
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircleAvatar(
+                        radius: 38,
+                        backgroundImage: profile.avatarUrl == null ? null : NetworkImage(profile.avatarUrl!),
+                        child: profile.avatarUrl == null
+                            ? Text(displayName.isEmpty ? '?' : displayName.characters.first.toUpperCase(), style: Theme.of(context).textTheme.headlineMedium)
+                            : null,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(displayName, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
+                      const SizedBox(height: 4),
+                      Text(_roleLabel(participant.role), style: Theme.of(context).textTheme.labelLarge),
+                      if (profile.region.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Row(mainAxisSize: MainAxisSize.min, children: [
+                          const Icon(Icons.location_on_outlined, size: 17),
+                          const SizedBox(width: 4),
+                          Flexible(child: Text(profile.region)),
+                        ]),
+                      ],
+                      if (profile.bio.isNotEmpty) ...[
+                        const SizedBox(height: 14),
+                        Text(profile.bio, textAlign: TextAlign.center),
+                      ],
+                      const SizedBox(height: 16),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(children: [
+                          Icon(position == null ? Icons.location_off_outlined : (position.isStale ? Icons.history_toggle_off : Icons.location_on_outlined), size: 18),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(position == null
+                                ? 'Ingen liveoppdatering'
+                                : 'Posisjon oppdatert ${_age(position.recordedAt)}${position.isStale ? ' · kan være utdatert' : ''}'),
+                          ),
+                        ]),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  String _roleLabel(ParticipantRole role) => switch (role) {
+        ParticipantRole.leader => 'Turleder',
+        ParticipantRole.sweep => 'Baktropp',
+        ParticipantRole.participant => 'Deltaker',
+      };
+
   void _participants(BuildContext context, WidgetRef ref, Activity a, List<LiveParticipantPosition> livePositions) => showModalBottomSheet<void>(
         context: context,
         showDragHandle: true,
@@ -190,6 +296,10 @@ class LiveActivityScreen extends ConsumerWidget {
             child: ListView(shrinkWrap: true, padding: const EdgeInsets.only(bottom: 20), children: [
               Padding(padding: const EdgeInsets.all(16), child: Text('Deltakere', style: Theme.of(sheetContext).textTheme.titleLarge)),
               ...visibleParticipants.map((p) => ListTile(
+                    onTap: () {
+                      Navigator.pop(sheetContext);
+                      _participantProfile(context, a, p, livePositions);
+                    },
                     leading: CircleAvatar(child: Text(_activityMarker(a.kind))),
                     title: Text(_privateParticipantName(p.user.name, visibleParticipants)),
                     subtitle: Text(_liveParticipantSubtitle(p, livePositions)),
