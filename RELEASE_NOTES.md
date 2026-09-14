@@ -1,3 +1,9 @@
+# v0.4.3 – Navigation Integrity Test Fix
+
+- Fixed the navigation integrity test that referenced an undefined Dart identifier inside a string assertion.
+- No production runtime code changed.
+- No Supabase migration required.
+
 # v0.4.2 – Orphan Cleanup & Navigation Integrity
 
 - Validate notification targets server-side before navigation.

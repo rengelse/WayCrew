@@ -24,7 +24,7 @@ void main() {
     final chat = File('lib/features/chat/chat_screen.dart').readAsStringSync();
     final errors = File('lib/core/errors_user_facing.dart').readAsStringSync();
     expect(chat, contains('_ChatUnavailableState'));
-    expect(chat, isNot(contains("error: (e, _) => Center(child: Text('\\$e'))")));
+    expect(chat, isNot(contains(r"error: (e, _) => Center(child: Text('$e'))")));
     expect(errors, contains('activity_chat_membership_required'));
     expect(errors, contains('group_chat_membership_required'));
   });
