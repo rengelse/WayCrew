@@ -34,6 +34,13 @@ class SupabaseNotificationRepository implements NotificationRepository {
     await _client.from('notifications').delete().eq('id', id).eq('user_id', _userId);
   }
 
+  @override
+  Future<String?> resolveRoute(String id) async {
+    final result = await _client.rpc('resolve_notification_route', params: {'p_notification_id': id});
+    if (result is String && result.trim().isNotEmpty) return result;
+    return null;
+  }
+
   AppNotification _fromRow(Map<String, dynamic> row) {
     return AppNotification(
       id: row['id'] as String,

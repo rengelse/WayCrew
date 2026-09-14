@@ -1,3 +1,14 @@
+# v0.4.2 – Orphan Cleanup & Navigation Integrity
+
+- Validate notification targets server-side before navigation.
+- Automatically remove notifications that point to deleted activities, groups or history.
+- Remove old chat notifications when activity/group membership ends.
+- Add delete triggers so future entity deletion cleans related notifications.
+- Activity/group chat access failures now show a user-facing unavailable state instead of raw PostgrestException text.
+- Stale notification taps show a concise message and remove the invalid notification.
+- No raw backend exception text is shown on the notifications error state.
+- Backend migration: `20260914201000_orphan_cleanup_navigation_integrity.sql`.
+
 # Release notes
 
 ## v0.4.1 – Demo Removal & Production-Only Data Layer

@@ -15,7 +15,7 @@ Ved push til `main` kjører GitHub Actions automatisk:
 - signerer APK med WayCrew sin faste release-nøkkel
 - laster opp `WayCrew-vX.Y.Z.apk` som Actions-artifact
 
-Ved tag som starter med `v`, f.eks. `v0.4.1`, gjør workflowen det samme og publiserer APK-en på **GitHub Releases**. WayCrew sin innebygde oppdateringssjekk bruker disse GitHub Releases.
+Ved tag som starter med `v`, f.eks. `v0.4.2`, gjør workflowen det samme og publiserer APK-en på **GitHub Releases**. WayCrew sin innebygde oppdateringssjekk bruker disse GitHub Releases.
 
 ## 2. Lag permanent Android signing key én gang
 
@@ -52,16 +52,16 @@ Keystore/passord skal aldri committes til repoet.
 
 ## 5. Lag en GitHub Release
 
-Versjonen i `pubspec.yaml` og taggen må være identiske. For v0.4.1:
+Versjonen i `pubspec.yaml` og taggen må være identiske. For v0.4.2:
 
 ```powershell
-git tag v0.4.1
-git push origin v0.4.1
+git tag v0.4.2
+git push origin v0.4.2
 ```
 
 GitHub Actions validerer taggen og lager:
 
-`WayCrew-v0.4.1.apk`
+`WayCrew-v0.4.2.apk`
 
 APK-en legges automatisk på GitHub Releases.
 

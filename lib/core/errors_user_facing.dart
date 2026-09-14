@@ -24,6 +24,21 @@ String userFacingError(Object error, {required String fallback}) {
   if (text.contains('leader_required') || text.contains('activity_owner_required')) {
     return 'Bare turlederen kan gjøre dette.';
   }
+  if (text.contains('activity_chat_membership_required')) {
+    return 'Du har ikke lenger tilgang til denne aktivitetschatten.';
+  }
+  if (text.contains('group_chat_membership_required')) {
+    return 'Du har ikke lenger tilgang til denne gruppechatten.';
+  }
+  if (text.contains('activity_not_found')) {
+    return 'Aktiviteten finnes ikke lenger.';
+  }
+  if (text.contains('group_not_found')) {
+    return 'Gruppen finnes ikke lenger.';
+  }
+  if (text.contains('history_not_found')) {
+    return 'Historikken finnes ikke lenger.';
+  }
   if (text.contains('participant_required')) {
     return 'Du er ikke lenger godkjent deltaker på aktiviteten.';
   }

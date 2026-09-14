@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/design_system/app_widgets.dart';
 import '../../data/providers.dart';
 import '../../data/supabase/providers.dart';
@@ -67,7 +68,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         Expanded(
           child: asyncMessages.when(
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Center(child: Text('$e')),
+            error: (e, _) => _ChatUnavailableState(
+              message: userFacingError(e, fallback: 'Chatten er ikke tilgjengelig.'),
+              fallbackLocation: widget.isGroup ? '/group/${widget.entityId}' : '/activity/${widget.entityId}',
+            ),
             data: (messages) => messages.isEmpty
                 ? const Center(child: Text('Ingen meldinger ennå'))
                 : ListView.builder(
@@ -87,17 +91,18 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   ),
           ),
         ),
-        SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(10),
-            child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-              IconButton(onPressed: _attachments, icon: const Icon(Icons.add_circle_outline)),
-              Expanded(child: TextField(controller: controller, minLines: 1, maxLines: 4, decoration: const InputDecoration(hintText: 'Skriv en melding...'))),
-              const SizedBox(width: 8),
-              IconButton.filled(onPressed: _send, icon: const Icon(Icons.send_rounded)),
-            ]),
+        if (!asyncMessages.hasError)
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                IconButton(onPressed: _attachments, icon: const Icon(Icons.add_circle_outline)),
+                Expanded(child: TextField(controller: controller, minLines: 1, maxLines: 4, decoration: const InputDecoration(hintText: 'Skriv en melding...'))),
+                const SizedBox(width: 8),
+                IconButton.filled(onPressed: _send, icon: const Icon(Icons.send_rounded)),
+              ]),
+            ),
           ),
-        ),
       ]),
     );
   }
@@ -179,6 +184,32 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     } catch (error) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(userFacingError(error, fallback: 'Kunne ikke sende meldingen. Prøv igjen.'))));
     }
+  }
+}
+
+class _ChatUnavailableState extends StatelessWidget {
+  final String message;
+  final String fallbackLocation;
+  const _ChatUnavailableState({required this.message, required this.fallbackLocation});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          const Icon(Icons.chat_bubble_outline, size: 44),
+          const SizedBox(height: 12),
+          Text(message, textAlign: TextAlign.center),
+          const SizedBox(height: 16),
+          FilledButton.icon(
+            onPressed: () => context.go(fallbackLocation),
+            icon: const Icon(Icons.arrow_back),
+            label: const Text('Tilbake'),
+          ),
+        ]),
+      ),
+    );
   }
 }
 

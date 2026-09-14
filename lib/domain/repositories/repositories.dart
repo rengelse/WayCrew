@@ -49,6 +49,7 @@ abstract interface class NotificationRepository {
   Future<void> markRead(String id);
   Future<void> markAllRead();
   Future<void> remove(String id);
+  Future<String?> resolveRoute(String id);
 }
 
 abstract interface class HistoryRepository {

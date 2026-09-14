@@ -1,4 +1,4 @@
-# WayCrew production cleanup – v0.4.1
+# WayCrew production cleanup – v0.4.2
 
 Denne oppdateringen fullfører oppryddingen etter v0.4.0.
 

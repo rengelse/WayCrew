@@ -35,8 +35,8 @@ if (ROOT / "test/widget_test.dart").exists():
     issues.append("Flutter template widget_test.dart must not be committed")
 if (ROOT / "test/mock_repository_test.dart").exists():
     issues.append("mock repository tests must not exist")
-if "version: 0.4.1+43" not in pubspec:
-    issues.append("unexpected app version for v0.4.1")
+if "version: 0.4.2+44" not in pubspec:
+    issues.append("unexpected app version for v0.4.2")
 
 if issues:
     print("WayCrew project audit FAILED:")

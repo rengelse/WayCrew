@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/design_system/app_widgets.dart';
 import '../../data/providers.dart';
 import '../../domain/models/activity_models.dart';
+import '../../core/errors_user_facing.dart';
 
 class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});
@@ -36,7 +37,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
               const SizedBox(height: 12),
               const Text('Kunne ikke laste varsler.'),
               const SizedBox(height: 6),
-              Text('$e', textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodySmall),
+              Text(userFacingError(e, fallback: 'Varsler er midlertidig utilgjengelige.'), textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodySmall),
               const SizedBox(height: 14),
               FilledButton.icon(
                 onPressed: () => ref.invalidate(notificationsProvider),
@@ -93,11 +94,36 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
       subtitle: Text(item.body),
       trailing: item.priority == NotificationPriority.critical ? const StatusBadge('Viktig') : const Icon(Icons.chevron_right),
       onTap: () async {
-        await _markRead(item.id);
-        if (mounted && item.route != null) context.push(item.route!);
+        await _openNotification(item);
       },
       onLongPress: () => _remove(item.id),
     );
+  }
+
+
+  Future<void> _openNotification(AppNotification item) async {
+    await _markRead(item.id);
+    if (!mounted || item.route == null) return;
+    try {
+      final route = await ref.read(notificationRepositoryProvider)?.resolveRoute(item.id);
+      if (!mounted) return;
+      if (route == null) {
+        await ref.read(notificationRepositoryProvider)?.remove(item.id);
+        ref.invalidate(notificationsProvider);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Innholdet er ikke lenger tilgjengelig. Varslet er fjernet.')),
+          );
+        }
+        return;
+      }
+      context.push(route);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(userFacingError(error, fallback: 'Kunne ikke åpne varselet. Prøv igjen.'))),
+      );
+    }
   }
 
   Future<void> _markRead(String id) async {
