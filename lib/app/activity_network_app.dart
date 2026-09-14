@@ -2,26 +2,25 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/supabase/supabase_providers.dart';
 import '../core/update/app_update_gate.dart';
-import '../data/mock/mock_settings_store.dart';
-import '../data/mock/providers.dart';
-import '../features/auth/auth_controller.dart';
+import '../data/local/settings_store.dart';
+import '../data/providers.dart';
 import '../features/auth/auth_screen.dart';
 import '../features/live_activity/live_tracking_gate.dart';
 import 'app_router.dart';
 import 'app_theme.dart';
+import '../core/config/app_environment.dart';
 
 class ActivityNetworkApp extends ConsumerWidget {
   const ActivityNetworkApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final settings = ref.watch(mockSettingsStoreProvider);
+    final settings = ref.watch(settingsStoreProvider);
     final themeMode = switch (settings.themePreference) {
       ThemePreference.system => ThemeMode.system,
       ThemePreference.light => ThemeMode.light,
       ThemePreference.dark => ThemeMode.dark,
     };
-    final demoMode = ref.watch(localDemoModeProvider);
     final session = ref.watch(authSessionProvider);
 
     return session.when(
@@ -44,7 +43,7 @@ class ActivityNetworkApp extends ConsumerWidget {
         home: _BootstrapErrorScreen(error: error),
       ),
       data: (activeSession) {
-        if (activeSession == null && !demoMode) {
+        if (activeSession == null) {
           return MaterialApp(
             debugShowCheckedModeBanner: false,
             title: 'WayCrew',
@@ -95,7 +94,10 @@ class _BootstrapErrorScreen extends StatelessWidget {
                   const SizedBox(height: 16),
                   Text('Kunne ikke starte Supabase', style: Theme.of(context).textTheme.titleLarge),
                   const SizedBox(height: 8),
-                  Text('$error', textAlign: TextAlign.center),
+                  Text(
+                    AppEnvironment.isDevelopment ? '$error' : 'Kunne ikke koble til tjenesten. Prøv igjen senere.',
+                    textAlign: TextAlign.center,
+                  ),
                 ],
               ),
             ),

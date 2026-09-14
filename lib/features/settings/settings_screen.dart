@@ -3,19 +3,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../../core/design_system/app_widgets.dart';
-import '../../data/mock/mock_settings_store.dart';
-import '../../data/mock/providers.dart';
+import '../../data/local/settings_store.dart';
+import '../../data/providers.dart';
 import '../../core/supabase/supabase_providers.dart';
 import '../../core/update/app_update_installer.dart';
 import '../../core/update/app_update_service.dart';
 import '../auth/auth_controller.dart';
+import '../../core/errors_user_facing.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final s = ref.watch(mockSettingsStoreProvider);
-    final store = ref.read(mockSettingsStoreProvider.notifier);
+    final s = ref.watch(settingsStoreProvider);
+    final store = ref.read(settingsStoreProvider.notifier);
     return Scaffold(
       appBar: AppBar(leading: const AppBackButton(fallbackLocation: '/profile'), title: const Text('Innstillinger')),
       body: ListView(children: [
@@ -68,28 +69,21 @@ class _AccountSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentSupabaseUserProvider);
-    final demo = ref.watch(localDemoModeProvider);
     return AppSection(
       title: 'Konto',
       child: Card(
         child: Column(
           children: [
             ListTile(
-              leading: Icon(demo ? Icons.science_outlined : Icons.verified_user_outlined),
-              title: Text(demo ? 'Lokal demo' : (user?.email ?? 'Supabase-konto')),
-              subtitle: Text(demo ? 'Mockdata · ingen backendkonto aktiv' : 'Koblet til activity-network-dev'),
+              leading: const Icon(Icons.verified_user_outlined),
+              title: Text(user?.email ?? 'Supabase-konto'),
+              subtitle: const Text('Koblet til WayCrew-backend'),
             ),
             const Divider(height: 1),
             ListTile(
               leading: const Icon(Icons.logout),
-              title: Text(demo ? 'Avslutt demo' : 'Logg ut'),
-              onTap: () async {
-                if (demo) {
-                  ref.read(localDemoModeProvider.notifier).state = false;
-                } else {
-                  await ref.read(authRepositoryProvider).signOut();
-                }
-              },
+              title: const Text('Logg ut'),
+              onTap: () async => ref.read(authRepositoryProvider).signOut(),
             ),
           ],
         ),
@@ -179,7 +173,7 @@ class _AboutSectionState extends State<_AboutSection> {
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('Kunne ikke sjekke etter oppdatering'),
-          content: Text('$error'),
+          content: Text(userFacingError(error, fallback: 'Kunne ikke kontrollere oppdateringer. Prøv igjen.')),
           actions: [
             FilledButton(
               onPressed: () => Navigator.pop(context),

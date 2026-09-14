@@ -4,22 +4,17 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../core/design_system/app_widgets.dart';
-import '../../data/mock/mock_profile_store.dart';
-import '../../data/mock/providers.dart';
+import '../../domain/models/profile_models.dart';
+import '../../data/providers.dart';
 import '../../data/supabase/providers.dart';
 import '../../domain/models/activity_models.dart';
-import '../auth/auth_controller.dart';
+import '../../core/errors_user_facing.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final demo = ref.watch(localDemoModeProvider);
-    if (demo) {
-      return _ProfileScaffold(profile: ref.watch(mockProfileStoreProvider), demo: true);
-    }
-
     final asyncProfile = ref.watch(supabaseProfileControllerProvider);
     return asyncProfile.when(
       loading: () => const Scaffold(
@@ -36,7 +31,7 @@ class ProfileScreen extends ConsumerWidget {
               const SizedBox(height: 12),
               const Text('Kunne ikke laste profilen.'),
               const SizedBox(height: 8),
-              Text('$error', textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodySmall),
+              Text(userFacingError(error, fallback: 'Kunne ikke hente profilen. Prøv igjen.'), textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodySmall),
               const SizedBox(height: 16),
               FilledButton.icon(
                 onPressed: () => ref.read(supabaseProfileControllerProvider.notifier).refresh(),
@@ -47,7 +42,7 @@ class ProfileScreen extends ConsumerWidget {
           ),
         ),
       ),
-      data: (profile) => _ProfileScaffold(profile: profile, demo: false),
+      data: (profile) => _ProfileScaffold(profile: profile),
     );
   }
 }
@@ -65,16 +60,12 @@ class _ProfileAppBar extends StatelessWidget implements PreferredSizeWidget {
 
 class _ProfileScaffold extends ConsumerWidget {
   final ProfileState profile;
-  final bool demo;
-  const _ProfileScaffold({required this.profile, required this.demo});
+  const _ProfileScaffold({required this.profile});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final realHistory = demo ? const <ActivityHistoryEntry>[] : (ref.watch(activityHistoryProvider).valueOrNull ?? const <ActivityHistoryEntry>[]);
-    final history = demo ? ref.watch(mockHistoryStoreProvider) : realHistory;
-    final groups = demo
-        ? ref.watch(mockGroupStoreProvider).where((g) => g.member).length
-        : (ref.watch(myGroupsProvider).valueOrNull?.length ?? 0);
+    final history = ref.watch(activityHistoryProvider).valueOrNull ?? const <ActivityHistoryEntry>[];
+    final groups = ref.watch(myGroupsProvider).valueOrNull?.length ?? 0;
     final mcKm = history.where((h) => h.kind == ActivityKind.motorcycle).fold<double>(0, (sum, h) => sum + h.distanceKm);
 
     return Scaffold(
@@ -116,14 +107,12 @@ class _ProfileScaffold extends ConsumerWidget {
                   OutlinedButton.icon(onPressed: () => _removeAvatar(context, ref), icon: const Icon(Icons.person_off_outlined), label: const Text('Fjern bilde')),
               ],
             ),
-            if (!demo) ...[
-              const SizedBox(height: 12),
-              Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                Icon(Icons.cloud_done_outlined, size: 16, color: Theme.of(context).colorScheme.primary),
-                const SizedBox(width: 6),
-                Text('Lagret i Supabase', style: Theme.of(context).textTheme.labelMedium),
-              ]),
-            ],
+            const SizedBox(height: 12),
+            Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              Icon(Icons.cloud_done_outlined, size: 16, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(width: 6),
+              Text('Lagret i WayCrew', style: Theme.of(context).textTheme.labelMedium),
+            ]),
           ])))),
           AppSection(title: 'Aktivitet', child: Row(children: [
             Expanded(child: _Stat(value: '${history.length}', label: 'historikk')),
@@ -179,23 +168,15 @@ class _ProfileScaffold extends ConsumerWidget {
       final file = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 1024, imageQuality: 85);
       if (file == null) return;
       final bytes = await file.readAsBytes();
-      if (demo) {
-        ref.read(mockProfileStoreProvider.notifier).setAvatar(bytes);
-      } else {
-        final extension = file.name.contains('.') ? file.name.split('.').last : 'jpg';
-        final ok = await ref.read(supabaseProfileControllerProvider.notifier).uploadAvatar(bytes, extension: extension);
-        if (!ok && context.mounted) _showError(context, 'Kunne ikke laste opp profilbildet.');
-      }
+      final extension = file.name.contains('.') ? file.name.split('.').last : 'jpg';
+      final ok = await ref.read(supabaseProfileControllerProvider.notifier).uploadAvatar(bytes, extension: extension);
+      if (!ok && context.mounted) _showError(context, 'Kunne ikke laste opp profilbildet.');
     } catch (_) {
       if (context.mounted) _showError(context, 'Kunne ikke velge profilbilde.');
     }
   }
 
   Future<void> _removeAvatar(BuildContext context, WidgetRef ref) async {
-    if (demo) {
-      ref.read(mockProfileStoreProvider.notifier).removeAvatar();
-      return;
-    }
     final ok = await ref.read(supabaseProfileControllerProvider.notifier).removeAvatar();
     if (!ok && context.mounted) _showError(context, 'Kunne ikke fjerne profilbildet.');
   }
@@ -215,11 +196,6 @@ class _ProfileScaffold extends ConsumerWidget {
           SizedBox(width: double.infinity, child: FilledButton(
             onPressed: () async {
               if (name.text.trim().length < 2) return;
-              if (demo) {
-                ref.read(mockProfileStoreProvider.notifier).updateBasic(name: name.text, region: region.text, bio: bio.text);
-                if (ctx.mounted) Navigator.pop(ctx);
-                return;
-              }
               final ok = await ref.read(supabaseProfileControllerProvider.notifier).updateBasic(name: name.text, region: region.text, bio: bio.text);
               if (ctx.mounted && ok) Navigator.pop(ctx);
               if (context.mounted && !ok) _showError(context, 'Kunne ikke lagre profilen.');
@@ -232,10 +208,6 @@ class _ProfileScaffold extends ConsumerWidget {
   }
 
   Future<void> _toggleInterest(BuildContext context, WidgetRef ref, ActivityKind kind) async {
-    if (demo) {
-      ref.read(mockProfileStoreProvider.notifier).toggleInterest(kind);
-      return;
-    }
     final ok = await ref.read(supabaseProfileControllerProvider.notifier).toggleInterest(kind);
     if (!ok && context.mounted) _showError(context, 'Kunne ikke oppdatere interessen.');
   }
@@ -273,21 +245,11 @@ class _ProfileScaffold extends ConsumerWidget {
           Row(children: [
             if (existing != null)
               Expanded(child: OutlinedButton(onPressed: () async {
-                if (demo) {
-                  ref.read(mockProfileStoreProvider.notifier).removeActivityProfile(kind);
-                  if (ctx.mounted) Navigator.pop(ctx);
-                  return;
-                }
                 final ok = await ref.read(supabaseProfileControllerProvider.notifier).removeActivityProfile(kind);
                 if (ctx.mounted && ok) Navigator.pop(ctx);
               }, child: const Text('Fjern'))),
             if (existing != null) const SizedBox(width: 8),
             Expanded(child: FilledButton(onPressed: () async {
-              if (demo) {
-                ref.read(mockProfileStoreProvider.notifier).upsertActivityProfile(kind, experience: experience.text, summary: summary.text);
-                if (ctx.mounted) Navigator.pop(ctx);
-                return;
-              }
               final ok = await ref.read(supabaseProfileControllerProvider.notifier).upsertActivityProfile(kind, experience: experience.text, summary: summary.text);
               if (ctx.mounted && ok) Navigator.pop(ctx);
               if (context.mounted && !ok) _showError(context, 'Kunne ikke lagre aktivitetsprofilen.');

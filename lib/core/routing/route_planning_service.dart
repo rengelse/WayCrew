@@ -72,10 +72,7 @@ List<RouteCoordinate> decodeValhallaPolyline6(String encoded) {
 }
 
 class RoutePlanningService {
-  static const _endpoints = <String>[
-    'https://valhalla1.openstreetmap.de/route',
-    'https://valhalla.openstreetmap.de/route',
-  ];
+  static const _endpoint = 'https://valhalla1.openstreetmap.de/route';
 
   Future<PlannedRoute> plan({
     required ActivityKind kind,
@@ -133,7 +130,7 @@ class RoutePlanningService {
     http.Response? lastResponse;
     final encodedPayload = jsonEncode(payload);
 
-    for (final endpoint in _endpoints) {
+    for (final endpoint in const [_endpoint]) {
       try {
         final postResponse = await http
             .post(
@@ -141,7 +138,7 @@ class RoutePlanningService {
               headers: const {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
-                'User-Agent': 'WayCrew/0.3.6',
+                'User-Agent': 'WayCrew-Android',
                 'X-Client-Id': 'waycrew.app',
               },
               body: encodedPayload,
@@ -151,7 +148,7 @@ class RoutePlanningService {
         if (postResponse.statusCode == 200) return postResponse;
         lastResponse = postResponse;
 
-        // Some public Valhalla demo frontends reject POST with HTTP 405,
+        // Some public Valhalla endpoints may reject POST with HTTP 405,
         // while supporting the documented GET form using the `json` query.
         if (postResponse.statusCode == 405) {
           final getUri = Uri.parse(endpoint).replace(queryParameters: {'json': encodedPayload});
@@ -160,7 +157,7 @@ class RoutePlanningService {
                 getUri,
                 headers: const {
                   'Accept': 'application/json',
-                  'User-Agent': 'WayCrew/0.3.6',
+                  'User-Agent': 'WayCrew-Android',
                   'X-Client-Id': 'waycrew.app',
                 },
               )

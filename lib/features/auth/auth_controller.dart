@@ -1,12 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/supabase/supabase_providers.dart';
 import '../../data/supabase/supabase_auth_repository.dart';
+import '../../core/errors_user_facing.dart';
 
 final authRepositoryProvider = Provider<SupabaseAuthRepository>((ref) {
   return SupabaseAuthRepository(ref.watch(supabaseClientProvider));
 });
-
-final localDemoModeProvider = StateProvider<bool>((ref) => false);
 
 class AuthActionState {
   final bool loading;
@@ -64,7 +63,7 @@ class AuthController extends StateNotifier<AuthActionState> {
     if (text.contains('Invalid login credentials')) return 'Feil e-post eller passord.';
     if (text.contains('Email not confirmed')) return 'E-postadressen er ikke bekreftet ennå.';
     if (text.contains('User already registered')) return 'Det finnes allerede en konto med denne e-postadressen.';
-    return 'Kunne ikke fullføre handlingen. $text';
+    return userFacingError(error, fallback: 'Kunne ikke fullføre handlingen. Prøv igjen.');
   }
 }
 

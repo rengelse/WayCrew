@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'app/activity_network_app.dart';
 import 'core/config/app_environment.dart';
-import 'data/mock/providers.dart';
+import 'data/providers.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,7 +14,7 @@ Future<void> main() async {
   await Supabase.initialize(
     url: AppEnvironment.supabaseUrl,
     publishableKey: AppEnvironment.supabasePublishableKey,
-    debug: AppEnvironment.isDevelopment,
+    debug: AppEnvironment.supabaseDebug,
   );
 
   runApp(

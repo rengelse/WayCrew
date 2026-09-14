@@ -4,9 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../app/app_theme.dart';
 import '../../core/design_system/app_widgets.dart';
 import '../../core/map/activity_map.dart';
-import '../../core/dev/dev_scenario.dart';
-import '../../core/dev/dev_scenario_provider.dart';
-import '../../data/mock/providers.dart';
+import '../../data/providers.dart';
 import '../../domain/models/activity_models.dart';
 
 class MapScreen extends ConsumerWidget {
@@ -15,7 +13,6 @@ class MapScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final activities = ref.watch(filteredActivitiesProvider);
-    final scenario = ref.watch(devScenarioProvider);
     final filter = ref.watch(activityFilterProvider);
     final filterStore = ref.read(activityFilterProvider.notifier);
     final unread = (ref.watch(notificationsProvider).valueOrNull ?? const <AppNotification>[]).where((n) => !n.read).length;
@@ -26,7 +23,6 @@ class MapScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Utforsk'),
         actions: [
-          IconButton(onPressed: () => _showScenarioPicker(context, ref, scenario), icon: const Icon(Icons.science_outlined), tooltip: 'Dev scenario'),
           _NotificationButton(unread: unread),
         ],
       ),
@@ -89,20 +85,6 @@ class MapScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
-                if (scenario == DevScenario.offline)
-                  Positioned(
-                    top: 14,
-                    left: 28,
-                    right: 28,
-                    child: Material(
-                      color: Theme.of(context).colorScheme.errorContainer,
-                      borderRadius: BorderRadius.circular(14),
-                      child: const Padding(
-                        padding: EdgeInsets.all(10),
-                        child: Text('Begrenset tilkobling · viser sist lastede data', textAlign: TextAlign.center),
-                      ),
-                    ),
-                  ),
                 Positioned(
                   left: 22,
                   right: 22,
@@ -144,36 +126,6 @@ class MapScreen extends ConsumerWidget {
           ),
         ),
       ]),
-    );
-  }
-
-  void _showScenarioPicker(BuildContext context, WidgetRef ref, DevScenario current) {
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Dev Scenario Switcher', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 10),
-            RadioGroup<DevScenario>(
-              groupValue: current,
-              onChanged: (value) {
-                if (value != null) ref.read(devScenarioProvider.notifier).state = value;
-                Navigator.pop(context);
-              },
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: DevScenario.values.map((scenario) => RadioListTile<DevScenario>(
-                  value: scenario,
-                  title: Text(scenario.label),
-                )).toList(),
-              ),
-            ),
-          ]),
-        ),
-      ),
     );
   }
 }

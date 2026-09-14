@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/design_system/app_widgets.dart';
-import '../../data/mock/mock_data.dart';
-import '../../data/mock/providers.dart';
+import '../../data/providers.dart';
 import '../../data/supabase/providers.dart';
-import '../auth/auth_controller.dart';
 import '../../domain/models/activity_models.dart';
+import '../../core/errors_user_facing.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
   final String title;
@@ -30,9 +29,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     final asyncMessages = ref.watch(widget.isGroup ? groupMessagesProvider(widget.entityId) : activityMessagesProvider(widget.entityId));
-    final demo = ref.watch(localDemoModeProvider);
     final remoteName = ref.watch(supabaseProfileControllerProvider).valueOrNull?.name;
-    final currentName = demo ? ref.watch(mockProfileStoreProvider).name : (remoteName ?? 'Meg');
+    final currentName = remoteName ?? 'Meg';
     final currentUserId = ref.watch(currentActivityUserIdProvider);
     final activity = widget.isGroup ? null : ref.watch(activityByIdProvider(widget.entityId)).valueOrNull;
     final group = widget.isGroup ? ref.watch(groupByIdProvider(widget.entityId)).valueOrNull : null;
@@ -113,22 +111,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ListTile(
             leading: const Icon(Icons.location_on_outlined),
             title: const Text('Del posisjon'),
-            subtitle: Text(ref.read(localDemoModeProvider)
-                ? 'Sender et demo-posisjonspunkt'
-                : 'Aktiveres sammen med ekte GPS/live tracking'),
+            subtitle: const Text('Posisjonsdeling bruker ekte GPS/live tracking'),
             onTap: () async {
               Navigator.pop(sheetContext);
-              if (!ref.read(localDemoModeProvider)) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Posisjonsdeling kobles på i Live Tracking-fasen. Ingen dummy-posisjon sendes.')));
-                }
-                return;
-              }
-              final repo = ref.read(chatRepositoryProvider);
-              if (widget.isGroup) {
-                await repo.sendGroupMessage(widget.entityId, '📍 Demo-posisjon', senderName: _senderName());
-              } else {
-                await repo.sendActivityMessage(widget.entityId, '📍 Demo-posisjon', senderName: _senderName());
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Deling av konkret posisjon i chat kobles til live-GPS uten dummydata.')));
               }
             },
           ),
@@ -148,8 +135,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
 
   String _senderName() {
-    final demo = ref.read(localDemoModeProvider);
-    if (demo) return ref.read(mockProfileStoreProvider).name;
     return ref.read(supabaseProfileControllerProvider).valueOrNull?.name ?? 'Meg';
   }
 
@@ -174,7 +159,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       await ref.read(chatRepositoryProvider).deleteMessage(message.id);
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Kunne ikke slette meldingen: $error')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(userFacingError(error, fallback: 'Kunne ikke slette meldingen. Prøv igjen.'))));
       }
     }
   }
@@ -192,7 +177,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       controller.clear();
       if (mounted) setState(() => important = false);
     } catch (error) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Kunne ikke sende meldingen: $error')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(userFacingError(error, fallback: 'Kunne ikke sende meldingen. Prøv igjen.'))));
     }
   }
 }
@@ -213,7 +198,7 @@ class _MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mine = (currentUserId != null && message.senderId == currentUserId) || message.sender == currentName || message.sender == currentUser.name;
+    final mine = (currentUserId != null && message.senderId == currentUserId) || message.sender == currentName;
     final canDelete = !message.system && !message.isDeleted && (mine || canModerate);
     return Align(
       alignment: message.system ? Alignment.center : mine ? Alignment.centerRight : Alignment.centerLeft,

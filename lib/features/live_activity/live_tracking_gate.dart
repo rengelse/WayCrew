@@ -3,9 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../data/mock/providers.dart';
+import '../../data/providers.dart';
 import '../../domain/models/activity_models.dart';
-import '../auth/auth_controller.dart';
 import 'live_tracking_controller.dart';
 
 /// Keeps live tracking bound to the user's active activity rather than to a
@@ -45,17 +44,13 @@ class _LiveTrackingGateState extends ConsumerState<LiveTrackingGate>
     if (_checking || !mounted) return;
     _checking = true;
     try {
-      if (ref.read(localDemoModeProvider)) {
-        await _stopCurrent();
-        return;
-      }
       final currentUserId = ref.read(currentActivityUserIdProvider);
       if (currentUserId == null) {
         await _stopCurrent();
         return;
       }
 
-      final settings = ref.read(mockSettingsStoreProvider);
+      final settings = ref.read(settingsStoreProvider);
       final sharingEnabled = settings.participantLocation ||
           settings.leaderLocation ||
           settings.publicApproximateLocation;

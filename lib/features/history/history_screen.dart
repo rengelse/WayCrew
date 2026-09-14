@@ -4,15 +4,13 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/design_system/app_widgets.dart';
 import '../../core/map/history_route_map.dart';
-import '../../data/mock/providers.dart';
+import '../../data/providers.dart';
 import '../../domain/models/activity_models.dart';
-import '../auth/auth_controller.dart';
 
 class HistoryScreen extends ConsumerWidget {
   const HistoryScreen({super.key});
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final demo = ref.watch(localDemoModeProvider);
     final asyncActivities = ref.watch(activitiesProvider);
     final asyncHistory = ref.watch(activityHistoryProvider);
     return Scaffold(
@@ -51,7 +49,6 @@ class HistoryScreen extends ConsumerWidget {
                       ),
               ),
             ])),
-            if (!demo) const SizedBox.shrink(),
           ]));
         },
       ),
@@ -150,19 +147,14 @@ class HistoryDetailScreen extends ConsumerWidget {
   };
 
   Future<void> _delete(BuildContext context, WidgetRef ref) async {
-    final demo = ref.read(localDemoModeProvider);
     final confirmed = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
       title: const Text('Slett fra min historikk?'),
-      content: Text(demo ? 'Dette fjerner posten fra din lokale historikk.' : 'Dette fjerner historikkposten og din lagrede rute fra kontoen din.'),
+      content: const Text('Dette fjerner historikkposten og din lagrede rute fra kontoen din.'),
       actions: [TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Avbryt')), FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Slett'))],
     ));
     if (confirmed != true) return;
-    if (demo) {
-      ref.read(mockHistoryStoreProvider.notifier).remove(historyId);
-    } else {
-      await ref.read(historyRepositoryProvider)?.remove(historyId);
-      ref.invalidate(activityHistoryProvider);
-    }
+    await ref.read(historyRepositoryProvider)?.remove(historyId);
+    ref.invalidate(activityHistoryProvider);
     if (!context.mounted) return;
     if (context.canPop()) { context.pop(); } else { context.go('/history'); }
   }

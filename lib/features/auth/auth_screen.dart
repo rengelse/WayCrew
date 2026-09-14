@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/config/app_environment.dart';
 import 'auth_controller.dart';
 
 class AuthScreen extends ConsumerStatefulWidget {
@@ -158,22 +157,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                       },
                       child: const Text('Glemt passord?'),
                     ),
-                  if (AppEnvironment.isDevelopment) ...[
-                    const SizedBox(height: 20),
-                    const Divider(),
-                    const SizedBox(height: 8),
-                    OutlinedButton.icon(
-                      onPressed: state.loading ? null : () => ref.read(localDemoModeProvider.notifier).state = true,
-                      icon: const Icon(Icons.science_outlined),
-                      label: const Text('Fortsett i lokal demo'),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Utviklingsmodus: lokal demo bruker fortsatt isolerte mockdata. Ekte konto bruker Supabase for profil, aktiviteter, grupper, chat og live tracking.',
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                    ),
-                  ],
                 ],
               ),
             ),

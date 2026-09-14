@@ -3,9 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/design_system/app_widgets.dart';
-import '../../data/mock/providers.dart';
+import '../../data/providers.dart';
 import '../../domain/models/activity_models.dart';
-import '../auth/auth_controller.dart';
 
 class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});
@@ -18,13 +17,12 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final demo = ref.watch(localDemoModeProvider);
     final asyncItems = ref.watch(notificationsProvider);
     return Scaffold(
       appBar: AppBar(
         leading: const AppBackButton(fallbackLocation: '/map'),
         title: const Text('Varsler'),
-        actions: [TextButton(onPressed: () => _markAllRead(demo), child: const Text('Merk alle lest'))],
+        actions: [TextButton(onPressed: _markAllRead, child: const Text('Merk alle lest'))],
       ),
       body: SafeArea(
         top: false,
@@ -65,7 +63,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
             else
               AppSection(child: Card(child: Column(children: [
                 for (var i = 0; i < visible.length; i++) ...[
-                  _notificationTile(visible[i], demo),
+                  _notificationTile(visible[i]),
                   if (i != visible.length - 1) const Divider(height: 1),
                 ],
               ]))),
@@ -81,7 +79,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     child: ChoiceChip(label: Text(label), selected: filter == value, onSelected: (_) => setState(() => filter = value)),
   );
 
-  Widget _notificationTile(AppNotification item, bool demo) {
+  Widget _notificationTile(AppNotification item) {
     final icon = switch (item.category) {
       NotificationCategory.activities => Icons.explore_outlined,
       NotificationCategory.groups => Icons.groups_outlined,
@@ -95,34 +93,22 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
       subtitle: Text(item.body),
       trailing: item.priority == NotificationPriority.critical ? const StatusBadge('Viktig') : const Icon(Icons.chevron_right),
       onTap: () async {
-        await _markRead(item.id, demo);
+        await _markRead(item.id);
         if (mounted && item.route != null) context.push(item.route!);
       },
-      onLongPress: () => _remove(item.id, demo),
+      onLongPress: () => _remove(item.id),
     );
   }
 
-  Future<void> _markRead(String id, bool demo) async {
-    if (demo) {
-      ref.read(mockNotificationStoreProvider.notifier).markRead(id);
-    } else {
-      await ref.read(notificationRepositoryProvider)?.markRead(id);
-    }
+  Future<void> _markRead(String id) async {
+    await ref.read(notificationRepositoryProvider)?.markRead(id);
   }
 
-  Future<void> _markAllRead(bool demo) async {
-    if (demo) {
-      ref.read(mockNotificationStoreProvider.notifier).markAllRead();
-    } else {
-      await ref.read(notificationRepositoryProvider)?.markAllRead();
-    }
+  Future<void> _markAllRead() async {
+    await ref.read(notificationRepositoryProvider)?.markAllRead();
   }
 
-  Future<void> _remove(String id, bool demo) async {
-    if (demo) {
-      ref.read(mockNotificationStoreProvider.notifier).remove(id);
-    } else {
-      await ref.read(notificationRepositoryProvider)?.remove(id);
-    }
+  Future<void> _remove(String id) async {
+    await ref.read(notificationRepositoryProvider)?.remove(id);
   }
 }

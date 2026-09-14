@@ -1,7 +1,7 @@
-/// Runtime configuration for the development Supabase project.
+/// Compile-time runtime configuration for WayCrew.
 ///
-/// The publishable key is intentionally client-safe. Production/staging values
-/// should be supplied with --dart-define when those environments are created.
+/// Release builds default to production-safe behaviour. Development-only
+/// features must be enabled explicitly with --dart-define.
 abstract final class AppEnvironment {
   static const supabaseUrl = String.fromEnvironment(
     'SUPABASE_URL',
@@ -15,7 +15,12 @@ abstract final class AppEnvironment {
 
   static const environment = String.fromEnvironment(
     'APP_ENV',
-    defaultValue: 'development',
+    defaultValue: 'production',
+  );
+
+  static const supabaseDebug = bool.fromEnvironment(
+    'SUPABASE_DEBUG',
+    defaultValue: false,
   );
 
   static bool get isDevelopment => environment == 'development';

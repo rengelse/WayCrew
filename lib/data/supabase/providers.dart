@@ -3,7 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/supabase/supabase_providers.dart';
-import '../../data/mock/mock_profile_store.dart';
+import '../../domain/models/profile_models.dart';
 import '../../domain/models/activity_models.dart';
 import 'supabase_profile_repository.dart';
 

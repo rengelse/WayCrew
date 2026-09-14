@@ -56,7 +56,7 @@ class SettingsState {
   );
 }
 
-class MockSettingsStore extends StateNotifier<SettingsState> {
+class LocalSettingsStore extends StateNotifier<SettingsState> {
   static const _themeKey = 'settings.theme';
   static const _participantLocationKey = 'settings.participant_location';
   static const _leaderLocationKey = 'settings.leader_location';
@@ -64,7 +64,7 @@ class MockSettingsStore extends StateNotifier<SettingsState> {
   static const _routeHistoryKey = 'settings.route_history';
   final SharedPreferences? _preferences;
 
-  MockSettingsStore([this._preferences]) : super(SettingsState(
+  LocalSettingsStore([this._preferences]) : super(SettingsState(
     themePreference: _readTheme(_preferences),
     participantLocation: _preferences?.getBool(_participantLocationKey) ?? true,
     leaderLocation: _preferences?.getBool(_leaderLocationKey) ?? true,

@@ -3,8 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/design_system/app_widgets.dart';
-import '../../data/mock/providers.dart';
+import '../../data/providers.dart';
 import '../../domain/repositories/repositories.dart';
+import '../../core/errors_user_facing.dart';
 
 class ReportHelpScreen extends ConsumerStatefulWidget {
   final String? targetType;
@@ -107,7 +108,7 @@ class _ReportHelpScreenState extends ConsumerState<ReportHelpScreen> {
             const SizedBox(height: 8),
             reports.when(
               loading: () => const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator())),
-              error: (error, _) => Text('Kunne ikke hente rapporthistorikk: $error'),
+              error: (error, _) => Text(userFacingError(error, fallback: 'Kunne ikke hente rapporthistorikken.')),
               data: (items) {
                 if (items.isEmpty) {
                   return const Card(child: ListTile(title: Text('Ingen rapporter sendt.')));
@@ -151,7 +152,7 @@ class _ReportHelpScreenState extends ConsumerState<ReportHelpScreen> {
       }
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Kunne ikke sende rapport: $error')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(userFacingError(error, fallback: 'Kunne ikke sende rapporten. Prøv igjen.'))));
       }
     } finally {
       if (mounted) {

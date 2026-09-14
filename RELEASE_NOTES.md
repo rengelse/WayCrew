@@ -1,3 +1,27 @@
+# Release notes
+
+## v0.4.1 – Demo Removal & Production-Only Data Layer
+- Removed all local demo mode and demo login UI.
+- Removed all mock repositories, stores, mock data and Dev Scenario tooling.
+- Production providers now use Supabase only.
+- Renamed persistent local settings/filter stores out of the mock namespace.
+- Moved profile data types to the domain model layer.
+- Removed mock-only tests and added CI audit rules that fail if demo/mock runtime code returns.
+- No Supabase migration required.
+
+# WayCrew v0.4.0 – Production Audit & Cleanup
+
+- Full static production audit across Flutter, Supabase, routing, updater, tracking and CI.
+- Release builds now default to production; local demo and Supabase debug are explicit opt-ins.
+- Removed obsolete Valhalla web-frontend fallback.
+- Added centralized user-facing error sanitization for critical screens.
+- Added Supabase privilege-hardening migration for internal/helper functions.
+- Added `tool/audit_project.py` and CI production audit guard.
+- Refreshed stale project documentation and baseline references.
+- New migration: `20260914194500_production_audit_cleanup.sql`.
+
+---
+
 # WayCrew v0.3.9 – Chat Message Management
 
 - Added soft-delete for chat messages with explicit confirmation.

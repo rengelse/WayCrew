@@ -6,6 +6,7 @@ import 'package:ota_update/ota_update.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'app_update_service.dart';
+import '../errors_user_facing.dart';
 
 Future<void> showAppUpdateDownload(
   BuildContext context,
@@ -83,11 +84,11 @@ class _AppUpdateDownloadDialogState extends State<_AppUpdateDownloadDialog> {
           .listen(
             _onEvent,
             onError: (Object error, StackTrace stackTrace) {
-              _setError('Nedlastingen feilet: $error');
+              _setError(userFacingError(error, fallback: 'Nedlastingen feilet. Prøv igjen.'));
             },
           );
     } catch (error) {
-      _setError('Kunne ikke starte oppdateringen: $error');
+      _setError(userFacingError(error, fallback: 'Kunne ikke starte oppdateringen. Prøv igjen.'));
     }
   }
 

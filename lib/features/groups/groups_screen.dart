@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../app/app_theme.dart';
 import '../../core/design_system/app_widgets.dart';
-import '../../data/mock/providers.dart';
+import '../../data/providers.dart';
 import '../../domain/models/activity_models.dart';
 
 class GroupsScreen extends ConsumerStatefulWidget {

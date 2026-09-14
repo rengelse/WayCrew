@@ -8,8 +8,9 @@ import '../../core/geocoding/place_search_field.dart';
 import '../../core/geocoding/place_search_service.dart';
 import '../../core/map/planned_route_map.dart';
 import '../../core/routing/route_planning_service.dart';
-import '../../data/mock/providers.dart';
+import '../../data/providers.dart';
 import '../../domain/models/activity_models.dart';
+import '../../core/errors_user_facing.dart';
 
 class CreateActivityScreen extends ConsumerStatefulWidget {
   final String? initialGroupId;
@@ -144,7 +145,7 @@ class _CreateActivityScreenState extends ConsumerState<CreateActivityScreen> {
     } catch (error) {
       if (!mounted) return;
       setState(() => publishing = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Kunne ikke opprette aktiviteten: $error')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(userFacingError(error, fallback: 'Kunne ikke opprette aktiviteten. Prøv igjen.'))));
     }
   }
 

@@ -4,9 +4,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 
-import '../../data/mock/providers.dart';
+import '../../data/providers.dart';
 import '../../domain/models/activity_models.dart';
 import '../../domain/repositories/repositories.dart';
+import '../../core/errors_user_facing.dart';
 
 class LiveTrackingState {
   final bool starting;
@@ -112,13 +113,13 @@ class LiveTrackingController extends StateNotifier<LiveTrackingState> {
       ).listen(
         (position) => _publish(position),
         onError: (Object error) {
-          state = state.copyWith(error: 'GPS-oppdatering feilet: $error');
+          state = state.copyWith(error: userFacingError(error, fallback: 'GPS-oppdateringen feilet. Prøv igjen.'));
         },
       );
 
       state = state.copyWith(starting: false, tracking: true, clearError: true);
     } catch (error) {
-      state = state.copyWith(starting: false, tracking: false, error: 'Kunne ikke starte live-sporing: $error');
+      state = state.copyWith(starting: false, tracking: false, error: userFacingError(error, fallback: 'Kunne ikke starte live-sporing.'));
     }
   }
 
@@ -158,7 +159,7 @@ class LiveTrackingController extends StateNotifier<LiveTrackingState> {
               : 'Live-sporing er stoppet fordi aktiviteten ikke lenger er aktiv.',
         );
       } else {
-        state = state.copyWith(error: 'Kunne ikke sende liveposisjon: $error');
+        state = state.copyWith(error: userFacingError(error, fallback: 'Kunne ikke sende liveposisjonen.'));
       }
     } finally {
       _publishing = false;
@@ -221,9 +222,9 @@ final liveTrackingControllerProvider = StateNotifierProvider.family<LiveTracking
   return LiveTrackingController(
     activityId: activityId,
     repository: ref.watch(liveTrackingRepositoryProvider),
-    shareWithParticipants: () => ref.read(mockSettingsStoreProvider).participantLocation,
-    shareWithLeader: () => ref.read(mockSettingsStoreProvider).leaderLocation,
-    publicApproximate: () => ref.read(mockSettingsStoreProvider).publicApproximateLocation,
-    saveRouteHistory: () => ref.read(mockSettingsStoreProvider).routeHistory,
+    shareWithParticipants: () => ref.read(settingsStoreProvider).participantLocation,
+    shareWithLeader: () => ref.read(settingsStoreProvider).leaderLocation,
+    publicApproximate: () => ref.read(settingsStoreProvider).publicApproximateLocation,
+    saveRouteHistory: () => ref.read(settingsStoreProvider).routeHistory,
   );
 });

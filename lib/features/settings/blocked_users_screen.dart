@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/design_system/app_widgets.dart';
-import '../../data/mock/providers.dart';
+import '../../data/providers.dart';
+import '../../core/errors_user_facing.dart';
 
 class BlockedUsersScreen extends ConsumerWidget {
   const BlockedUsersScreen({super.key});
@@ -23,14 +24,14 @@ class BlockedUsersScreen extends ConsumerWidget {
           error: (error, _) => _Message(
             icon: Icons.error_outline,
             title: 'Kunne ikke hente blokkerte brukere',
-            body: '$error',
+            body: userFacingError(error, fallback: 'Kunne ikke hente blokkerte brukere.'),
           ),
           data: (items) {
             if (repository == null) {
               return const _Message(
                 icon: Icons.shield_outlined,
-                title: 'Ikke tilgjengelig i demo',
-                body: 'Blokkering lagres på kontoen din når du er innlogget mot WayCrew-backend.',
+                title: 'Krever innlogging',
+                body: 'Blokkering lagres på WayCrew-kontoen din når du er innlogget.',
               );
             }
             if (items.isEmpty) {
@@ -61,7 +62,7 @@ class BlockedUsersScreen extends ConsumerWidget {
                           }
                         } catch (error) {
                           if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Kunne ikke oppheve blokkering: $error')));
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(userFacingError(error, fallback: 'Kunne ikke oppheve blokkeringen. Prøv igjen.'))));
                           }
                         }
                       },

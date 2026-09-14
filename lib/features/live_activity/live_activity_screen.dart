@@ -2,14 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/design_system/app_widgets.dart';
-import '../../core/map/activity_map.dart';
 import '../../core/map/live_activity_map.dart';
-import '../../core/dev/dev_scenario.dart';
-import '../../core/dev/dev_scenario_provider.dart';
-import '../../data/mock/providers.dart';
+import '../../data/providers.dart';
 import '../../domain/models/activity_models.dart';
-import '../auth/auth_controller.dart';
 import 'live_tracking_controller.dart';
+import '../../core/errors_user_facing.dart';
 
 class LiveActivityScreen extends ConsumerWidget {
   final String activityId;
@@ -18,9 +15,7 @@ class LiveActivityScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(activityByIdProvider(activityId));
-    final settings = ref.watch(mockSettingsStoreProvider);
-    final scenario = ref.watch(devScenarioProvider);
-    final demoMode = ref.watch(localDemoModeProvider);
+    final settings = ref.watch(settingsStoreProvider);
     final livePositionsAsync = ref.watch(liveParticipantsProvider(activityId));
     final publicStateAsync = ref.watch(activityPublicStateProvider(activityId));
     final trackingState = ref.watch(liveTrackingControllerProvider(activityId));
@@ -30,7 +25,7 @@ class LiveActivityScreen extends ConsumerWidget {
       data: (a) {
         if (a == null) return const Scaffold(body: Center(child: Text('Liveaktiviteten er ikke tilgjengelig.')));
         if (!a.isLive) {
-          if (!demoMode && trackingState.tracking) {
+          if (trackingState.tracking) {
             Future.microtask(() => ref.read(liveTrackingControllerProvider(activityId).notifier).stop(notifyServer: false));
           }
           return Scaffold(
@@ -45,11 +40,11 @@ class LiveActivityScreen extends ConsumerWidget {
           );
         }
         final trackingEnabled = settings.participantLocation || settings.leaderLocation || settings.publicApproximateLocation;
-        if (!demoMode && trackingEnabled && !trackingState.tracking && !trackingState.starting && !trackingState.permissionDenied && !trackingState.serviceDisabled) {
+        if (trackingEnabled && !trackingState.tracking && !trackingState.starting && !trackingState.permissionDenied && !trackingState.serviceDisabled) {
           Future.microtask(() => ref.read(liveTrackingControllerProvider(activityId).notifier).start());
-        } else if (!demoMode && !trackingEnabled && trackingState.tracking) {
+        } else if (!trackingEnabled && trackingState.tracking) {
           Future.microtask(() => ref.read(liveTrackingControllerProvider(activityId).notifier).stop());
-        } else if (!demoMode && trackingState.tracking) {
+        } else if (trackingState.tracking) {
           Future.microtask(() => ref.read(liveTrackingControllerProvider(activityId).notifier).syncPrivacy());
         }
         final livePositions = livePositionsAsync.valueOrNull ?? const <LiveParticipantPosition>[];
@@ -74,16 +69,14 @@ class LiveActivityScreen extends ConsumerWidget {
               Positioned.fill(
                 child: Padding(
                   padding: const EdgeInsets.all(12),
-                  child: demoMode
-                      ? ActivityMap(activities: [a], selectedActivityId: a.id)
-                      : LiveActivityMap(
-                          positions: visibleLivePositions,
-                          publicState: publicState,
-                          currentUserId: currentUserId,
-                          participantNames: {for (final participant in visibleParticipants) participant.user.id: participant.user.name},
-                          route: a.routePlan,
-                          activityKind: a.kind,
-                        ),
+                  child: LiveActivityMap(
+                    positions: visibleLivePositions,
+                    publicState: publicState,
+                    currentUserId: currentUserId,
+                    participantNames: {for (final participant in visibleParticipants) participant.user.id: participant.user.name},
+                    route: a.routePlan,
+                    activityKind: a.kind,
+                  ),
                 ),
               ),
               Positioned(
@@ -92,7 +85,7 @@ class LiveActivityScreen extends ConsumerWidget {
                 right: 24,
                 child: Column(children: [
                   Row(children: [StatusBadge(a.status.label), const Spacer(), FilledButton.tonalIcon(onPressed: () => _participants(context, ref, a, visibleLivePositions), icon: const Icon(Icons.groups_outlined), label: const Text('Vis gruppen'))]),
-                  if (!trackingEnabled || (!demoMode && !trackingState.tracking))
+                  if (!trackingEnabled || !trackingState.tracking)
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
                       child: Material(
@@ -103,8 +96,8 @@ class LiveActivityScreen extends ConsumerWidget {
                           child: Row(children: [
                             Icon(trackingEnabled ? Icons.gps_off : Icons.location_off_outlined),
                             const SizedBox(width: 8),
-                            Expanded(child: Text(_trackingMessage(demoMode, trackingEnabled, trackingState))),
-                            if (!demoMode && (trackingState.permissionDenied || trackingState.serviceDisabled))
+                            Expanded(child: Text(_trackingMessage(trackingEnabled, trackingState))),
+                            if (trackingState.permissionDenied || trackingState.serviceDisabled)
                               TextButton(
                                 onPressed: () => trackingState.permissionDenied
                                     ? ref.read(liveTrackingControllerProvider(activityId).notifier).openAppSettings()
@@ -113,15 +106,6 @@ class LiveActivityScreen extends ConsumerWidget {
                               ),
                           ]),
                         ),
-                      ),
-                    ),
-                  if (scenario == DevScenario.offline)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Material(
-                        color: Theme.of(context).colorScheme.errorContainer,
-                        borderRadius: BorderRadius.circular(12),
-                        child: const Padding(padding: EdgeInsets.all(10), child: Text('Begrenset tilkobling · liveoppdateringer kan være forsinket.')),
                       ),
                     ),
                 ]),
@@ -168,7 +152,7 @@ class LiveActivityScreen extends ConsumerWidget {
                         Row(children: [
                           Expanded(child: OutlinedButton.icon(onPressed: () => _participants(context, ref, a, visibleLivePositions), icon: const Icon(Icons.people_outline), label: const Text('Deltakere'))),
                           const SizedBox(width: 8),
-                          Expanded(child: FilledButton.tonalIcon(onPressed: trackingEnabled ? () => _catchUp(context, a, demoMode) : null, icon: const Icon(Icons.route), label: const Text('Ta meg igjen'))),
+                          Expanded(child: FilledButton.tonalIcon(onPressed: trackingEnabled ? () => _catchUp(context, a) : null, icon: const Icon(Icons.route), label: const Text('Ta meg igjen'))),
                         ]),
                         const SizedBox(height: 8),
                         Row(children: [
@@ -242,7 +226,7 @@ class LiveActivityScreen extends ConsumerWidget {
                                   }
                                 } catch (error) {
                                   if (sheetContext.mounted) {
-                                    ScaffoldMessenger.of(sheetContext).showSnackBar(SnackBar(content: Text('Kunne ikke blokkere bruker: $error')));
+                                    ScaffoldMessenger.of(sheetContext).showSnackBar(SnackBar(content: Text(userFacingError(error, fallback: 'Kunne ikke blokkere brukeren. Prøv igjen.'))));
                                   }
                                 }
                               } else if (value == 'report') {
@@ -293,22 +277,11 @@ class LiveActivityScreen extends ConsumerWidget {
       };
 
 
-  String _trackingMessage(bool demoMode, bool locationEnabled, LiveTrackingState trackingState) {
-    if (demoMode) {
-      return locationEnabled ? 'Demo-posisjon er aktiv.' : 'Din liveposisjon er satt på pause.';
-    }
-    if (!locationEnabled) {
-      return 'Din liveposisjon er satt på pause.';
-    }
-    if (trackingState.starting) {
-      return 'Starter GPS og live-sporing …';
-    }
-    if (trackingState.permissionDenied || trackingState.serviceDisabled) {
-      return trackingState.error ?? 'GPS er ikke tilgjengelig.';
-    }
-    if (trackingState.error != null) {
-      return trackingState.error!;
-    }
+  String _trackingMessage(bool locationEnabled, LiveTrackingState trackingState) {
+    if (!locationEnabled) return 'Din liveposisjon er satt på pause.';
+    if (trackingState.starting) return 'Starter GPS og live-sporing …';
+    if (trackingState.permissionDenied || trackingState.serviceDisabled) return trackingState.error ?? 'GPS er ikke tilgjengelig.';
+    if (trackingState.error != null) return trackingState.error!;
     return trackingState.tracking ? 'Liveposisjon deles med deltakerne.' : 'Live-sporing er ikke startet.';
   }
 
@@ -339,29 +312,8 @@ class LiveActivityScreen extends ConsumerWidget {
     return '${d.inHours} t siden';
   }
 
-  void _catchUp(BuildContext context, Activity a, bool demoMode) {
+  void _catchUp(BuildContext context, Activity a) {
     final target = a.nextStopName ?? a.meetingPoint;
-    if (!demoMode) {
-      showModalBottomSheet<void>(
-        context: context,
-        showDragHandle: true,
-        builder: (sheetContext) => SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Ta meg igjen', style: Theme.of(sheetContext).textTheme.titleLarge),
-              const SizedBox(height: 8),
-              const Text('Gruppens liveposisjon er tilgjengelig. Rutevalg og reell ETA kobles på sammen med routingmotoren; appen viser derfor ikke en beregnet demotid.'),
-              const SizedBox(height: 12),
-              Text('Neste registrerte punkt: $target'),
-            ]),
-          ),
-        ),
-      );
-      return;
-    }
-    final groupEta = a.nextStopEtaMinutes ?? 30;
-    final myEta = groupEta > 4 ? groupEta - 4 : groupEta;
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -369,12 +321,11 @@ class LiveActivityScreen extends ConsumerWidget {
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Møt gruppen her', style: Theme.of(sheetContext).textTheme.titleLarge),
-          const SizedBox(height: 8),
-          Text(target),
-          Text('Du: ca. $myEta min · Gruppen: ca. $groupEta min'),
-          const SizedBox(height: 16),
-          SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: () { Navigator.pop(sheetContext); ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Navigasjon til $target åpnes når kart/routing kobles på.'))); }, icon: const Icon(Icons.navigation), label: const Text('Naviger'))),
+            Text('Ta meg igjen', style: Theme.of(sheetContext).textTheme.titleLarge),
+            const SizedBox(height: 8),
+            const Text('Gruppens liveposisjon er tilgjengelig. Rutevalg og reell ETA beregnes mot live-data når catch-up-routing er ferdig koblet.'),
+            const SizedBox(height: 12),
+            Text('Neste registrerte punkt: $target'),
           ]),
         ),
       ),
@@ -431,10 +382,6 @@ class LiveActivityScreen extends ConsumerWidget {
                   await ref.read(activityRepositoryProvider).setStatus(a.id, ActivityStatus.finished);
                   await ref.read(liveTrackingControllerProvider(a.id).notifier).stop(notifyServer: false);
                   ref.invalidate(activityByIdProvider(a.id)); ref.invalidate(activitiesProvider); ref.invalidate(filteredActivitiesProvider);
-                  if (ref.read(localDemoModeProvider)) {
-                    final saveRoute = ref.read(mockSettingsStoreProvider).routeHistory;
-                    ref.read(mockHistoryStoreProvider.notifier).addFromFinishedActivity(a.copyWith(status: ActivityStatus.finished), routeSaved: saveRoute);
-                  }
                   if (sheetContext.mounted) { Navigator.pop(sheetContext); context.go('/activity/${a.id}'); }
                 },
               ),

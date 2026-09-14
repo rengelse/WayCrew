@@ -3,8 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/design_system/app_widgets.dart';
-import '../../data/mock/providers.dart';
+import '../../data/providers.dart';
 import '../../domain/models/activity_models.dart';
+import '../../core/errors_user_facing.dart';
 
 class GroupDetailScreen extends ConsumerStatefulWidget {
   final String groupId;
@@ -173,7 +174,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
       postController.clear();
       ref.invalidate(groupPostsProvider(widget.groupId));
     } catch (error) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Kunne ikke publisere innlegget: $error')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(userFacingError(error, fallback: 'Kunne ikke publisere innlegget. Prøv igjen.'))));
     } finally {
       if (mounted) setState(() => posting = false);
     }
@@ -232,7 +233,7 @@ class _MembershipAction extends ConsumerWidget {
       await action();
       onChanged();
     } catch (error) {
-      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Kunne ikke oppdatere medlemskapet: $error')));
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(userFacingError(error, fallback: 'Kunne ikke oppdatere medlemskapet. Prøv igjen.'))));
     }
   }
 

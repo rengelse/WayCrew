@@ -5,9 +5,9 @@ import 'package:intl/intl.dart';
 import '../../core/design_system/app_widgets.dart';
 import '../../core/map/activity_map.dart';
 import '../../core/map/meeting_point_map.dart';
-import '../../data/mock/providers.dart';
+import '../../data/providers.dart';
 import '../../domain/models/activity_models.dart';
-import '../auth/auth_controller.dart';
+import '../../core/errors_user_facing.dart';
 
 class ActivityDetailScreen extends ConsumerWidget {
   final String activityId;
@@ -161,7 +161,7 @@ class ActivityDetailScreen extends ConsumerWidget {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Aktiviteten er slettet.')));
       } catch (error) {
         if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Kunne ikke slette aktiviteten: $error')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(userFacingError(error, fallback: 'Kunne ikke slette aktiviteten. Prøv igjen.'))));
       }
       return;
     }
@@ -179,13 +179,9 @@ class ActivityDetailScreen extends ConsumerWidget {
       ref.invalidate(activityByIdProvider(a.id));
       ref.invalidate(activitiesProvider);
       ref.invalidate(filteredActivitiesProvider);
-      if (status == ActivityStatus.finished && ref.read(localDemoModeProvider)) {
-        final saveRoute = ref.read(mockSettingsStoreProvider).routeHistory;
-        ref.read(mockHistoryStoreProvider.notifier).addFromFinishedActivity(a.copyWith(status: ActivityStatus.finished), routeSaved: saveRoute);
-      }
     } catch (error) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Kunne ikke oppdatere aktiviteten: $error')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(userFacingError(error, fallback: 'Kunne ikke oppdatere aktiviteten. Prøv igjen.'))));
     }
   }
 

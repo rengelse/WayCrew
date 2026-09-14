@@ -3,8 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../app/app_theme.dart';
 import '../../core/design_system/app_widgets.dart';
-import '../../data/mock/providers.dart';
+import '../../data/providers.dart';
 import '../../domain/models/activity_models.dart';
+import '../../core/errors_user_facing.dart';
 
 class GroupAdminScreen extends ConsumerStatefulWidget {
   final String groupId;
@@ -217,7 +218,7 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Gruppeinnstillingene er lagret.')));
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Kunne ikke lagre gruppeinnstillingene: $error')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(userFacingError(error, fallback: 'Kunne ikke lagre gruppeinnstillingene. Prøv igjen.'))));
     }
   }
 
@@ -243,7 +244,7 @@ class _GroupAdminScreenState extends ConsumerState<GroupAdminScreen> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Gruppen er slettet.')));
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Kunne ikke slette gruppen: $error')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(userFacingError(error, fallback: 'Kunne ikke slette gruppen. Prøv igjen.'))));
     }
   }
 
